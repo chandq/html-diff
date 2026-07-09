@@ -11,7 +11,9 @@ on:
 
 jobs:
   verify:
+    name: Verify (Node ${{ matrix.node-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -25,7 +27,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
-          cache: npm
+          package-manager-cache: false
 
       - name: Install deps
         run: npm ci
@@ -37,7 +39,7 @@ jobs:
         run: npm test
 
       - name: Build
-        run: npm run build
+        run: npm run build --if-present
 
   release:
     name: Publish to npm
