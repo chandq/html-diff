@@ -39,6 +39,7 @@ const demoConfig: UserConfig['build'] = {
   sourcemap: true
 };
 
+// @ts-ignore
 export default defineConfig(({ mode }) => {
   const isDemo = mode === 'demo';
 

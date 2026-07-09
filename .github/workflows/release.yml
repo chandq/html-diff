@@ -8,6 +8,7 @@ on:
       - 'test/**'
       - 'package.json'
       - '.github/workflows/**'
+      - 'vite.config.ts'
   workflow_dispatch:
 
 jobs:
