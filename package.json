@@ -44,6 +44,13 @@
     "vite",
     "typescript"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chandq/html-diff.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chandq/html-diff/issues"
+  },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.8",
     "jsdom": "^25.0.1",
