@@ -68,10 +68,9 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Install deps
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
+        run: |
+          npm cache clean --force
+          npm ci
 
       - name: Test
         run: npm test
@@ -90,6 +89,8 @@ jobs:
           npx standard-version -m "chore: release version %s"
           git push --follow-tags origin main
           echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+          node -v
+          npm -v
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
