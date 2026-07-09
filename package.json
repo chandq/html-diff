@@ -28,7 +28,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run build:types",
-    "build:demo": "vite build --mode demo",
+    "build:demo": "vite build --mode demo --base=/html-diff/",
     "build:types": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
@@ -51,6 +51,7 @@
   "bugs": {
     "url": "https://github.com/chandq/html-diff/issues"
   },
+  "homepage": "https://chandq.github.io/html-diff/",
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.8",
     "jsdom": "^25.0.1",
