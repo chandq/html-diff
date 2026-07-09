@@ -1,5 +1,9 @@
 # @chandq/html-diff
 
+[![Release](https://github.com/chandq/html-diff/actions/workflows/release.yml/badge.svg)](https://github.com/chandq/html-diff/actions/workflows/release.yml)
+[![html-diff](https://img.shields.io/github/package-json/v/chandq/html-diff?style=flat-square)](https://www.npmjs.com/package/@chandq/html-diff)
+[![license:MIT](https://img.shields.io/npm/l/vue.svg?sanitize=true)](https://github.com/chandq/html-diff/blob/main/LICENSE)
+
 A standalone TypeScript HTML diff library for browser apps. It turns two HTML strings into a visual diff view, ships ESM/CJS/UMD builds, and defaults to `ShadowRoot` rendering to avoid style pollution.
 
 ## Features
