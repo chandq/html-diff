@@ -1,6 +1,15 @@
 import { resolve } from 'node:path';
 import type { UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
+import pkg from './package.json';
+import banner from 'vite-plugin-banner'
+
+const bannerString =
+  '/*!\n' +
+  ` * ${pkg.name} v${pkg.version}\n` +
+  ` * (c) 2025-present chandq\n` +
+  ' * Released under the MIT License.\n' +
+  ' */\n';
 
 const libraryConfig: UserConfig['build'] = {
   emptyOutDir: true,
@@ -35,6 +44,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     build: isDemo ? demoConfig : libraryConfig,
+    plugins: [banner({
+      outDir: resolve(__dirname, './dist'),
+      content: bannerString,
+    })],
     test: {
       environment: 'jsdom',
       globals: true,

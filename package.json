@@ -50,6 +50,7 @@
     "standard-version": "^9.5.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
+    "vite-plugin-banner": "^0.8.1",
     "vitest": "^2.1.8"
   }
 }
