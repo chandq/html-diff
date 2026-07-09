@@ -8,6 +8,7 @@ on:
     paths:
       - 'src/**' # 仅当 src 目录下的文件变化时触发
       - 'package.json' # 当 package.json 文件变化时触发
+      - '.github/workflows/**' # 当工作流程文件变化时触发
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
