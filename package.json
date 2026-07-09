@@ -1,0 +1,55 @@
+{
+  "name": "@chandq/html-diff",
+  "version": "0.1.0",
+  "description": "Reusable HTML diff visualizer for browser apps with isolated styles and Vite builds.",
+  "author": "chandq",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/types/index.d.ts",
+  "browser": "./dist/index.umd.js",
+  "unpkg": "./dist/index.umd.js",
+  "jsdelivr": "./dist/index.umd.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && npm run build:types",
+    "build:demo": "vite build --mode demo",
+    "build:types": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test": "vitest run --coverage",
+    "preview": "vite preview",
+    "release": "standard-version",
+    "prepublishOnly": "npm run build && npm run test:unit"
+  },
+  "keywords": [
+    "html-diff",
+    "dom-diff",
+    "visual-diff",
+    "vite",
+    "typescript"
+  ],
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.8",
+    "jsdom": "^25.0.1",
+    "standard-version": "^9.5.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
