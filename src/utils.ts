@@ -10,7 +10,7 @@ export function createStats(): DiffStats {
 
 export function countRenderableNodes(node: VNode): number {
   if (node.type === 'text') {
-    return node.text.trim() ? 1 : 0;
+    return isWhitespaceOnly(node.text) ? 0 : 1;
   }
 
   if (node.type === 'root') {
@@ -44,4 +44,23 @@ export function cloneStats(stats: DiffStats): DiffStats {
     removed: stats.removed,
     modified: stats.modified
   };
+}
+
+export function isWhitespaceOnly(text: string): boolean {
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+
+    if (
+      code !== 9 &&
+      code !== 10 &&
+      code !== 12 &&
+      code !== 13 &&
+      code !== 32 &&
+      code !== 160
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }

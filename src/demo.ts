@@ -106,12 +106,14 @@ oldInput.value = oldHtml;
 newInput.value = newHtml;
 
 function paint(): void {
+  console.time('renderHtmlDiff');
   const result = renderHtmlDiff({
     container: outputHost,
     oldHtml: oldInput.value,
     newHtml: newInput.value,
     mode: modeInput.value as RenderMode
   });
+  console.timeEnd('renderHtmlDiff');
 
   statsPanel.innerHTML = `
     <span>added: ${result.stats.added}</span>

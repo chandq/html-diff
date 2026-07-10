@@ -62,7 +62,7 @@ export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[
     newEnd >= start &&
     isSameNode(oldChildren[oldEnd], newChildren[newEnd])
   ) {
-    suffix.unshift({
+    suffix.push({
       status: 'merged',
       oldNode: oldChildren[oldEnd],
       newNode: newChildren[newEnd]
@@ -135,5 +135,27 @@ export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[
     newIndex += 1;
   }
 
-  return [...prefix, ...middle, ...suffix];
+  if (suffix.length > 1) {
+    suffix.reverse();
+  }
+
+  const patches = new Array<Patch>(prefix.length + middle.length + suffix.length);
+  let patchIndex = 0;
+
+  for (let index = 0; index < prefix.length; index += 1) {
+    patches[patchIndex] = prefix[index];
+    patchIndex += 1;
+  }
+
+  for (let index = 0; index < middle.length; index += 1) {
+    patches[patchIndex] = middle[index];
+    patchIndex += 1;
+  }
+
+  for (let index = 0; index < suffix.length; index += 1) {
+    patches[patchIndex] = suffix[index];
+    patchIndex += 1;
+  }
+
+  return patches;
 }

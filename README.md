@@ -13,7 +13,6 @@ A standalone TypeScript HTML diff library for browser apps. It turns two HTML st
 - Style isolation with `shadow`, `scoped`, and `none` modes
 - Vite-powered library build with ESM, CJS, and UMD outputs
 - Local live demo and Vitest coverage
-- GitHub Actions workflows for PR checks and npm release
 
 ## Install
 
