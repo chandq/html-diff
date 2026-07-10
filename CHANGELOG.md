@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.6](https://github.com/chandq/html-diff/compare/v0.1.5...v0.1.6) (2026-07-10)
+
+
+### Features
+
+* add theme configuration ([250e658](https://github.com/chandq/html-diff/commit/250e6582afd4555405a55bddeb3c2b403513f4a5))
+
 ### [0.1.5](https://github.com/chandq/html-diff/compare/v0.1.4...v0.1.5) (2026-07-10)
 
 
