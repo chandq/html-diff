@@ -1,4 +1,11 @@
-import { createHtmlDiffHtml, DIFF_STYLE_TEXT, diffHtml, parseHtmlToVNode, renderHtmlDiff } from '../src';
+import {
+  DIFF_STYLE_TEXT,
+  createDiffStyleText,
+  createHtmlDiffHtml,
+  diffHtml,
+  parseHtmlToVNode,
+  renderHtmlDiff
+} from '../src';
 
 describe('html-diff', () => {
   it('parses sibling html nodes into a root vnode', () => {
@@ -42,7 +49,7 @@ describe('html-diff', () => {
     ).toBe(' updated');
   });
 
-  it('preserves inherited color and strike-through styles for inline additions', () => {
+  it('preserves strike-through styles for inline additions', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
 
@@ -63,7 +70,55 @@ describe('html-diff', () => {
     expect(marker).toBeTruthy();
     expect(styledSpan?.style.textDecoration).toContain('line-through');
     expect(DIFF_STYLE_TEXT).not.toContain('text-decoration: none');
-    expect(getComputedStyle(marker as HTMLElement).color).toBe('rgb(255, 0, 0)');
+  });
+
+  it('uses the default diff colors', () => {
+    expect(DIFF_STYLE_TEXT).toContain('--shd-add-bg: #e6ffed;');
+    expect(DIFF_STYLE_TEXT).toContain('--shd-add-text: #1a7f37;');
+    expect(DIFF_STYLE_TEXT).toContain('--shd-remove-bg: #ffeef0;');
+    expect(DIFF_STYLE_TEXT).toContain('--shd-remove-text: #cf222e;');
+  });
+
+  it('can generate custom diff colors', () => {
+    const styleText = createDiffStyleText({
+      added: {
+        backgroundColor: '#def7ff',
+        color: '#0550ae'
+      },
+      removed: {
+        backgroundColor: '#fff1f3',
+        color: '#bc1d2e'
+      }
+    });
+
+    expect(styleText).toContain('--shd-add-bg: #def7ff;');
+    expect(styleText).toContain('--shd-add-text: #0550ae;');
+    expect(styleText).toContain('--shd-remove-bg: #fff1f3;');
+    expect(styleText).toContain('--shd-remove-text: #bc1d2e;');
+    expect(styleText).toContain('--shd-modified-border: rgba(217, 119, 6, 0.34);');
+  });
+
+  it('injects custom diff colors when rendering', () => {
+    const host = document.createElement('div');
+
+    renderHtmlDiff({
+      container: host,
+      mode: 'scoped',
+      oldHtml: '<p>alpha</p>',
+      newHtml: '<p>alpha beta</p>',
+      theme: {
+        added: {
+          backgroundColor: '#dff7ff',
+          color: '#0969da'
+        }
+      }
+    });
+
+    const styleText = host.querySelector('[data-html-diff-style]')?.textContent ?? '';
+
+    expect(styleText).toContain('--shd-add-bg: #dff7ff;');
+    expect(styleText).toContain('--shd-add-text: #0969da;');
+    expect(styleText).toContain('--shd-remove-bg: #ffeef0;');
   });
 
   it('does not override host typography defaults', () => {
@@ -89,7 +144,7 @@ describe('html-diff', () => {
     expect(DIFF_STYLE_TEXT).not.toContain('--shd-text');
   });
 
-  it('preserves inherited color styles for inline removals', () => {
+  it('renders inline removals with the configured removed style', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
 
@@ -105,7 +160,7 @@ describe('html-diff', () => {
     );
 
     expect(marker).toBeTruthy();
-    expect(getComputedStyle(marker as HTMLElement).color).toBe('rgb(0, 102, 204)');
+    expect(DIFF_STYLE_TEXT).toContain('color: var(--shd-remove-text);');
   });
 
   it('renders image replacements with the dedicated wrapper', () => {

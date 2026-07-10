@@ -1,4 +1,4 @@
-import { DIFF_STYLE_TEXT, ROOT_CLASS, STYLE_ATTRIBUTE } from './constants';
+import { ROOT_CLASS, STYLE_ATTRIBUTE, createDiffStyleText } from './constants';
 import { diffChildren } from './diff';
 import { parseHtmlToVNode } from './parse';
 import type {
@@ -88,7 +88,7 @@ export function renderHtmlDiff(options: RenderHtmlDiffOptions): RenderResult {
   root.appendChild(content);
 
   const html = root.innerHTML;
-  const mountResult = mountIntoContainer(options.container, root, mode);
+  const mountResult = mountIntoContainer(options.container, root, mode, options.theme);
   const exportedFragment = ownerDocument.createDocumentFragment();
   exportedFragment.appendChild(root.cloneNode(true));
 
@@ -113,7 +113,8 @@ function resolveRenderMode(container: HTMLElement, requestedMode: RenderMode): R
 function mountIntoContainer(
   container: HTMLElement,
   root: HTMLElement,
-  mode: RenderMode
+  mode: RenderMode,
+  theme: DiffOptions['theme']
 ): { destroy: () => void; shadowRoot?: ShadowRoot } {
   container.replaceChildren();
 
@@ -123,7 +124,7 @@ function mountIntoContainer(
     container.appendChild(mountHost);
 
     const shadowRoot = mountHost.attachShadow({ mode: 'open' });
-    shadowRoot.appendChild(createStyleNode(container.ownerDocument ?? document));
+    shadowRoot.appendChild(createStyleNode(container.ownerDocument ?? document, theme));
     shadowRoot.appendChild(root);
 
     return {
@@ -135,7 +136,7 @@ function mountIntoContainer(
   }
 
   if (mode === 'scoped') {
-    container.appendChild(createStyleNode(container.ownerDocument ?? document));
+    container.appendChild(createStyleNode(container.ownerDocument ?? document, theme));
   }
 
   container.appendChild(root);
@@ -147,10 +148,10 @@ function mountIntoContainer(
   };
 }
 
-function createStyleNode(documentNode: Document): HTMLStyleElement {
+function createStyleNode(documentNode: Document, theme: DiffOptions['theme']): HTMLStyleElement {
   const style = documentNode.createElement('style');
   style.setAttribute(STYLE_ATTRIBUTE, '');
-  style.textContent = DIFF_STYLE_TEXT;
+  style.textContent = createDiffStyleText(theme);
   return style;
 }
 

@@ -22,8 +22,23 @@ export type Patch =
   | { status: 'removed'; node: VNode }
   | { status: 'merged'; oldNode: VNode; newNode: VNode };
 
+export interface DiffThemeState {
+  backgroundColor?: string;
+  color?: string;
+}
+
+export interface DiffTheme {
+  added?: DiffThemeState;
+  removed?: DiffThemeState;
+  modified?: {
+    borderColor?: string;
+  };
+  pagePadding?: string;
+}
+
 export interface DiffOptions {
   ignoreWhitespace?: boolean;
+  theme?: DiffTheme;
 }
 
 export interface DiffStats {

@@ -39,26 +39,32 @@ renderHtmlDiff({
   oldHtml,
   newHtml,
   mode: 'shadow',
-  ignoreWhitespace: true
+  ignoreWhitespace: true,
+  theme: {
+    added: { backgroundColor: '#e6ffed', color: '#1a7f37' },
+    removed: { backgroundColor: '#ffeef0', color: '#cf222e' },
+    pagePadding: '16px'
+  }
 });
 ```
 
-| Option | Type | Default |
-| --- | --- | --- |
-| `container` | `HTMLElement` | required |
-| `oldHtml` | `string` | required |
-| `newHtml` | `string` | required |
-| `mode` | `'shadow' \| 'scoped' \| 'none'` | `'shadow'` |
-| `ignoreWhitespace` | `boolean` | `true` |
+| Option             | Type                             | Default                                      |
+| ------------------ | -------------------------------- | -------------------------------------------- |
+| `container`        | `HTMLElement`                    | required                                     |
+| `oldHtml`          | `string`                         | required                                     |
+| `newHtml`          | `string`                         | required                                     |
+| `mode`             | `'shadow' \| 'scoped' \| 'none'` | `'shadow'`                                   |
+| `ignoreWhitespace` | `boolean`                        | `true`                                       |
+| `theme`            | `DiffTheme`                      | GitHub-style add/remove colors, page padding |
 
 ### Other Exports
 
-| Function | Returns |
-| --- | --- |
-| `diffHtml(oldHtml, newHtml, options?)` | `{ fragment, stats }` |
-| `createHtmlDiffFragment(oldHtml, newHtml, options?)` | `DocumentFragment` |
-| `createHtmlDiffHtml(oldHtml, newHtml, options?)` | serialized diff HTML |
-| `parseHtmlToVNode(html, options?)` | internal VNode tree |
+| Function                                             | Returns               |
+| ---------------------------------------------------- | --------------------- |
+| `diffHtml(oldHtml, newHtml, options?)`               | `{ fragment, stats }` |
+| `createHtmlDiffFragment(oldHtml, newHtml, options?)` | `DocumentFragment`    |
+| `createHtmlDiffHtml(oldHtml, newHtml, options?)`     | serialized diff HTML  |
+| `parseHtmlToVNode(html, options?)`                   | internal VNode tree   |
 
 ## Rendering Notes
 

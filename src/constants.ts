@@ -1,16 +1,48 @@
+import type { DiffTheme } from './types';
+
 export const ROOT_CLASS = 'shd-root';
 export const STYLE_ATTRIBUTE = 'data-html-diff-style';
 
-export const DIFF_STYLE_TEXT = `
+export const DEFAULT_DIFF_THEME = {
+  added: {
+    backgroundColor: '#e6ffed',
+    color: '#1a7f37'
+  },
+  removed: {
+    backgroundColor: '#ffeef0',
+    color: '#cf222e'
+  },
+  modified: {
+    borderColor: 'rgba(217, 119, 6, 0.34)'
+  }
+} as const;
+
+export const DIFF_STYLE_TEXT = createDiffStyleText();
+
+export function createDiffStyleText(theme: DiffTheme = {}): string {
+  const addedBackgroundColor =
+    theme.added?.backgroundColor ?? DEFAULT_DIFF_THEME.added.backgroundColor;
+  const addedColor = theme.added?.color ?? DEFAULT_DIFF_THEME.added.color;
+  const removedBackgroundColor =
+    theme.removed?.backgroundColor ?? DEFAULT_DIFF_THEME.removed.backgroundColor;
+  const removedColor = theme.removed?.color ?? DEFAULT_DIFF_THEME.removed.color;
+  const modifiedBorderColor =
+    theme.modified?.borderColor ?? DEFAULT_DIFF_THEME.modified.borderColor;
+  const pagePadding = theme.pagePadding ?? '16px';
+
+  return `
 :host,
 .${ROOT_CLASS} {
-  --shd-add-bg: #ecfdf3;
-  --shd-remove-bg: #fff1f2;
+  --shd-add-bg: ${addedBackgroundColor};
+  --shd-add-text: ${addedColor};
+  --shd-remove-bg: ${removedBackgroundColor};
+  --shd-remove-text: ${removedColor};
+  --shd-page-padding: ${pagePadding};
   --shd-add-accent: rgba(5, 150, 105, 0.24);
   --shd-remove-accent: rgba(190, 24, 93, 0.86);
   --shd-add-border: rgba(5, 150, 105, 0.28);
   --shd-remove-border: rgba(225, 29, 72, 0.28);
-  --shd-modified-border: rgba(217, 119, 6, 0.34);
+  --shd-modified-border: ${modifiedBorderColor};
   --shd-panel-bg: #ffffff;
   --shd-surface: #f8fafc;
   --shd-border: rgba(15, 23, 42, 0.12);
@@ -30,14 +62,12 @@ export const DIFF_STYLE_TEXT = `
 .${ROOT_CLASS} .shd-content {
   display: block;
   border: 1px solid var(--shd-border);
-  border-radius: 18px;
-  padding: 20px;
+  border-radius: 4px;
+  padding: var(--shd-page-padding);
   color: inherit;
   font: inherit;
   line-height: inherit;
-  background:
-    radial-gradient(circle at top right, rgba(245, 158, 11, 0.16), transparent 30%),
-    linear-gradient(180deg, #ffffff, var(--shd-surface));
+
   overflow-wrap: anywhere;
 }
 
@@ -50,17 +80,21 @@ export const DIFF_STYLE_TEXT = `
 
 .${ROOT_CLASS} [data-shd-state="added"] {
   background: var(--shd-add-bg);
-  border-radius: 0.25em;
+  color: var(--shd-add-text);
+  border-radius: 4px;
   box-shadow: inset 0 -0.08em 0 var(--shd-add-accent);
+  padding: 1px 2px;
 }
 
 .${ROOT_CLASS} [data-shd-state="removed"] {
   background: var(--shd-remove-bg);
-  border-radius: 0.25em;
+  color: var(--shd-remove-text);
+  border-radius: 4px;
   text-decoration-line: line-through;
   text-decoration-color: var(--shd-remove-accent);
   text-decoration-thickness: 0.12em;
   text-decoration-skip-ink: none;
+  padding: 1px 2px;
 }
 
 .${ROOT_CLASS} .shd-text-marker {
@@ -76,7 +110,7 @@ export const DIFF_STYLE_TEXT = `
   padding: 34px 10px 10px;
   vertical-align: top;
   border: 1px solid var(--shd-border);
-  border-radius: 14px;
+  border-radius: 4px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
@@ -98,25 +132,25 @@ export const DIFF_STYLE_TEXT = `
   display: block;
   max-inline-size: 100%;
   block-size: auto;
-  border-radius: 10px;
+  border-radius: 4px;
 }
 
 .${ROOT_CLASS} [data-shd-media-state="added"] {
   border-color: var(--shd-add-border);
-  background: linear-gradient(180deg, rgba(236, 253, 243, 0.98), rgba(255, 255, 255, 0.96));
+  background: var(--shd-add-bg);
 }
 
 .${ROOT_CLASS} [data-shd-media-state="added"]::before {
-  background: #059669;
+  background: var(--shd-add-text);
 }
 
 .${ROOT_CLASS} [data-shd-media-state="removed"] {
   border-color: var(--shd-remove-border);
-  background: linear-gradient(180deg, rgba(255, 241, 242, 0.98), rgba(255, 255, 255, 0.96));
+  background: var(--shd-remove-bg);
 }
 
 .${ROOT_CLASS} [data-shd-media-state="removed"]::before {
-  background: #e11d48;
+  background: var(--shd-remove-text);
 }
 
 .${ROOT_CLASS} [data-shd-media-state="removed"] > img {
@@ -134,7 +168,7 @@ export const DIFF_STYLE_TEXT = `
   padding: 34px 10px 10px;
   vertical-align: top;
   max-inline-size: 100%;
-  border-radius: 14px;
+  border-radius: 4px;
   border: 1px solid var(--shd-border);
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
@@ -176,25 +210,25 @@ export const DIFF_STYLE_TEXT = `
   display: block;
   max-inline-size: 100%;
   block-size: auto;
-  border-radius: 10px;
+  border-radius: 4px;
 }
 
 .${ROOT_CLASS} .shd-image-wrapper[data-diff-kind="added"] {
   border-color: var(--shd-add-border);
-  background: linear-gradient(180deg, rgba(236, 253, 243, 0.98), rgba(255, 255, 255, 0.96));
+  background: var(--shd-add-bg);
 }
 
 .${ROOT_CLASS} .shd-image-wrapper[data-diff-kind="added"]::after {
-  background: #059669;
+  background: var(--shd-add-text);
 }
 
 .${ROOT_CLASS} .shd-image-wrapper[data-diff-kind="removed"] {
   border-color: var(--shd-remove-border);
-  background: linear-gradient(180deg, rgba(255, 241, 242, 0.98), rgba(255, 255, 255, 0.96));
+  background: var(--shd-remove-bg);
 }
 
 .${ROOT_CLASS} .shd-image-wrapper[data-diff-kind="removed"]::after {
-  background: #e11d48;
+  background: var(--shd-remove-text);
 }
 
 .${ROOT_CLASS} .shd-image-wrapper[data-diff-kind="removed"] .shd-image-stage > img {
@@ -221,3 +255,4 @@ export const DIFF_STYLE_TEXT = `
   opacity: 0.45;
 }
 `;
+}
