@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.5](https://github.com/chandq/html-diff/compare/v0.1.4...v0.1.5) (2026-07-10)
+
+
+### Features
+
+* accurately compare and display the differences between text and images ([699ae0c](https://github.com/chandq/html-diff/commit/699ae0c6d7b877f630d1fc1c5a631f423a04d501))
+
 ### [0.1.4](https://github.com/chandq/html-diff/compare/v0.1.3...v0.1.4) (2026-07-09)
 
 ### [0.1.3](https://github.com/chandq/html-diff/compare/v0.1.2...v0.1.3) (2026-07-09)
