@@ -4,15 +4,9 @@
 [![html-diff](https://img.shields.io/github/package-json/v/chandq/html-diff?style=flat-square)](https://www.npmjs.com/package/@chandq/html-diff)
 [![license:MIT](https://img.shields.io/npm/l/vue.svg?sanitize=true)](https://github.com/chandq/html-diff/blob/main/LICENSE)
 
-A standalone TypeScript HTML diff library for browser apps. It turns two HTML strings into a visual diff view, ships ESM/CJS/UMD builds, and defaults to `ShadowRoot` rendering to avoid style pollution.
+Browser HTML diff renderer for rich-text previews, CMS review pages, and editor integrations.
 
-## Features
-
-- HTML string to visual diff fragment or mounted view
-- Image-aware diff rendering for add, remove, and replace
-- Style isolation with `shadow`, `scoped`, and `none` modes
-- Vite-powered library build with ESM, CJS, and UMD outputs
-- Local live demo and Vitest coverage
+It accepts two HTML strings and returns a visual diff as a mounted view, `DocumentFragment`, or serialized HTML. The renderer is style-safe by default and handles text, inline markup, images, and preformatted code blocks.
 
 ## Install
 
@@ -20,15 +14,13 @@ A standalone TypeScript HTML diff library for browser apps. It turns two HTML st
 npm install @chandq/html-diff
 ```
 
-## Quick Start
+## Usage
 
 ```ts
 import { renderHtmlDiff } from '@chandq/html-diff';
 
-const host = document.getElementById('diff-root');
-
 renderHtmlDiff({
-  container: host!,
+  container: document.getElementById('diff-root')!,
   oldHtml: '<p>Hello <strong>world</strong></p>',
   newHtml: '<p>Hello brave <strong>world</strong></p>',
   mode: 'shadow'
@@ -39,57 +31,48 @@ renderHtmlDiff({
 
 ### `renderHtmlDiff(options)`
 
-Mount a visual diff into a container.
+Mounts the diff into a container and returns the rendered root, fragment, stats, and `destroy()`.
 
 ```ts
 renderHtmlDiff({
   container,
   oldHtml,
   newHtml,
-  mode: 'shadow'
+  mode: 'shadow',
+  ignoreWhitespace: true
 });
 ```
 
-Options:
+| Option | Type | Default |
+| --- | --- | --- |
+| `container` | `HTMLElement` | required |
+| `oldHtml` | `string` | required |
+| `newHtml` | `string` | required |
+| `mode` | `'shadow' \| 'scoped' \| 'none'` | `'shadow'` |
+| `ignoreWhitespace` | `boolean` | `true` |
 
-- `container`: target element
-- `oldHtml`: previous HTML string
-- `newHtml`: next HTML string
-- `mode`: `'shadow' | 'scoped' | 'none'`, default `'shadow'`
-- `ignoreWhitespace`: default `true`
+### Other Exports
 
-### `createHtmlDiffFragment(oldHtml, newHtml, options?)`
+| Function | Returns |
+| --- | --- |
+| `diffHtml(oldHtml, newHtml, options?)` | `{ fragment, stats }` |
+| `createHtmlDiffFragment(oldHtml, newHtml, options?)` | `DocumentFragment` |
+| `createHtmlDiffHtml(oldHtml, newHtml, options?)` | serialized diff HTML |
+| `parseHtmlToVNode(html, options?)` | internal VNode tree |
 
-Returns a `DocumentFragment`.
+## Rendering Notes
 
-### `createHtmlDiffHtml(oldHtml, newHtml, options?)`
-
-Returns serialized diff HTML.
-
-### `diffHtml(oldHtml, newHtml, options?)`
-
-Returns a fragment plus simple diff stats.
+- `shadow` is the safest mode for embedding in existing pages.
+- `scoped` injects prefixed styles into the container when `ShadowRoot` is unavailable or unwanted.
+- `none` renders markup only; use it when you provide styles yourself.
+- Existing text styles are preserved where possible. Diff styles are additive and scoped.
 
 ## Development
 
 ```bash
 npm install
 npm run dev
-```
-
-Library build:
-
-```bash
+npm run test:unit
+npm run typecheck
 npm run build
 ```
-
-Demo build:
-
-```bash
-npm run build:demo
-```
-
-## Notes
-
-- Default rendering mode is `shadow`, which is the safest choice when embedding into CMS pages or rich text editors.
-- If your target environment cannot use `ShadowRoot`, use `mode: 'scoped'` to keep styles prefixed under the mounted root.
