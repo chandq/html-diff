@@ -34,6 +34,64 @@ describe('html-diff', () => {
     expect(host.querySelector('p')?.textContent).toBe('Hello brave world');
   });
 
+  it('aligns inserted sibling text blocks without cascading inline replacements', () => {
+    const html = createHtmlDiffHtml(
+      '<ul><li>Redis cluster</li><li>MySQL primary-replica</li><li>Nginx gateway</li></ul>',
+      '<ul><li>Redis cluster</li><li>ElasticSearch search tier</li><li>MySQL primary-replica on 8.0</li><li>Nginx gateway</li></ul>'
+    );
+    const host = document.createElement('div');
+    host.innerHTML = html;
+    const items = Array.from(host.querySelectorAll('li'));
+
+    expect(items).toHaveLength(4);
+    expect(items[1].textContent).toBe('ElasticSearch search tier');
+    expect(items[1].getAttribute('data-shd-state')).toBe('added');
+    expect(items[2].textContent).toBe('MySQL primary-replica on 8.0');
+    expect(items[2].querySelector('[data-shd-state="removed"]')).toBeNull();
+    expect(
+      items[2].querySelector('[data-shd-marker="text"][data-shd-state="added"]')?.textContent
+    ).toBe(' on 8.0');
+    expect(items[3].textContent).toBe('Nginx gateway');
+    expect(items[3].getAttribute('data-shd-state')).toBeNull();
+  });
+
+  it('keeps long mixed Chinese and ASCII text diffs localized', () => {
+    const oldText = [
+      '要开始使用 REPL，打开你的浏览器并导航至 https://svelte.dev/repl。',
+      '屏幕左边你将可以看到你组件的代码，屏幕右边你可以看到你应用程序的执行输出。',
+      '程序代码上方的栏让你可以创建 .svelte 和 .js 文件，也能重新排列它们。',
+      '要在文件夹中创建文件，你只要输入完整的路径名称——components/MyComponent.svelte。',
+      '文件夹将被自动创建。 更上方的栏是 REPL 的标题。 点击可以编辑它。',
+      '右边有三个标签： Result 标签内会显示你应用程序的输出，底下也有提供控制台。',
+      'JS output 标签内可以让你检查 Svelte 产生的 JavaScript 代码且可以设定编译选项。',
+      'CSS output 标签内会显示 Svelte 产生的 CSS。',
+      '这些标签的上方，你将会找到一个工具栏，让你可以进入全屏幕模式和下载你的应用程序。',
+      '假如你有登入 GitHub 账号，你将能够复制（fork）和保存应用程序。',
+      '通过点击你 GitHub 的用户名个人资料并选择你已保存的应用程序（Your saved apps），将能够看到你已保存的所有 REPL。'
+    ].join(' ');
+    const newText = oldText
+      .replace('Svelte 产生的 CSS。', 'Svelte 产生的 CSSD。')
+      .replace('这些标签的上方，你将会找到', '这些标签的上方，你223将会找到')
+      .replace('让你可以进入全屏幕模式', '让赛你可以进入全屏幕模式');
+    const html = createHtmlDiffHtml(`<p>${oldText}</p>`, `<p>${newText}</p>`);
+    const host = document.createElement('div');
+    host.innerHTML = html;
+    const removedMarkers = Array.from(
+      host.querySelectorAll<HTMLElement>('[data-shd-marker="text"][data-shd-state="removed"]')
+    ).map(marker => marker.textContent);
+    const addedMarkers = Array.from(
+      host.querySelectorAll<HTMLElement>('[data-shd-marker="text"][data-shd-state="added"]')
+    ).map(marker => marker.textContent);
+    const markerTexts = [...removedMarkers, ...addedMarkers].filter(Boolean);
+
+    expect(removedMarkers).toContain('CSS');
+    expect(addedMarkers).toContain('CSSD');
+    expect(addedMarkers).toContain('223');
+    expect(addedMarkers).toContain('赛');
+    expect(markerTexts.some(text => text?.includes('这些标签的上方'))).toBe(false);
+    expect(markerTexts.some(text => text?.includes('将会找到一个工具栏'))).toBe(false);
+  });
+
   it('keeps source del and ins tags distinct from generated diff markers', () => {
     const html = createHtmlDiffHtml(
       '<p><del>legacy</del> summary</p>',

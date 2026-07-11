@@ -25,9 +25,15 @@ interface TokenDiffOperation {
   tokens: string[];
 }
 
-const TEXT_TOKEN_PATTERN = /\S+\s*|\s+/g;
-const MAX_TEXT_DIFF_TOKENS = 128;
-const MAX_TEXT_DIFF_MATRIX_CELLS = 4096;
+interface TextMatch {
+  oldStart: number;
+  newStart: number;
+  length: number;
+}
+
+const MAX_TEXT_DIFF_MATRIX_CELLS = 16384;
+const MAX_TEXT_MATCH_BLOCK_SIZE = 4;
+const MAX_TEXT_MATCH_STACK_DEPTH = 256;
 
 export function diffHtml(oldHtml: string, newHtml: string, options: DiffOptions = {}): DiffResult {
   const oldTree = parseHtmlToVNode(oldHtml, options);
@@ -436,33 +442,6 @@ function createTextMarker(
 }
 
 function diffTextSegments(oldText: string, newText: string): TextDiffSegment[] {
-  const prefixLength = getCommonPrefixLength(oldText, newText);
-  const suffixLength = getCommonSuffixLength(oldText, newText, prefixLength);
-  const segments: TextDiffSegment[] = [];
-
-  if (prefixLength > 0) {
-    segments.push({
-      type: 'equal',
-      text: oldText.slice(0, prefixLength)
-    });
-  }
-
-  const oldMiddle = oldText.slice(prefixLength, oldText.length - suffixLength);
-  const newMiddle = newText.slice(prefixLength, newText.length - suffixLength);
-
-  segments.push(...diffTextMiddle(oldMiddle, newMiddle));
-
-  if (suffixLength > 0) {
-    segments.push({
-      type: 'equal',
-      text: oldText.slice(oldText.length - suffixLength)
-    });
-  }
-
-  return mergeTextSegments(segments);
-}
-
-function diffTextMiddle(oldText: string, newText: string): TextDiffSegment[] {
   if (!oldText && !newText) {
     return [];
   }
@@ -478,27 +457,82 @@ function diffTextMiddle(oldText: string, newText: string): TextDiffSegment[] {
   const oldTokens = tokenizeText(oldText);
   const newTokens = tokenizeText(newText);
 
-  if (shouldFallbackToDirectTextDiff(oldTokens, newTokens)) {
-    return refineReplacementSegments(oldText, newText);
-  }
-
-  return refineTokenOperations(diffTextTokens(oldTokens, newTokens));
+  return tokenOperationsToSegments(diffTextTokens(oldTokens, newTokens));
 }
 
 function tokenizeText(text: string): string[] {
-  const tokens = text.match(TEXT_TOKEN_PATTERN);
-  return tokens ?? [text];
+  const tokens: string[] = [];
+  let current = '';
+  let currentType: 'word' | 'space' | null = null;
+
+  for (const character of text) {
+    const type = getTextTokenCharacterType(character);
+
+    if (type === 'word' || type === 'space') {
+      if (currentType === type) {
+        current += character;
+        continue;
+      }
+
+      if (current) {
+        tokens.push(current);
+      }
+
+      current = character;
+      currentType = type;
+      continue;
+    }
+
+    if (current) {
+      tokens.push(current);
+      current = '';
+      currentType = null;
+    }
+
+    tokens.push(character);
+  }
+
+  if (current) {
+    tokens.push(current);
+  }
+
+  return tokens;
 }
 
-function shouldFallbackToDirectTextDiff(oldTokens: string[], newTokens: string[]): boolean {
+function getTextTokenCharacterType(character: string): 'word' | 'space' | 'symbol' {
+  if (isTextWhitespace(character)) {
+    return 'space';
+  }
+
+  if (isTextWordCharacter(character)) {
+    return 'word';
+  }
+
+  return 'symbol';
+}
+
+function isTextWhitespace(character: string): boolean {
+  return /\s|\u00a0/.test(character);
+}
+
+function isTextWordCharacter(character: string): boolean {
+  const code = character.charCodeAt(0);
+
   return (
-    oldTokens.length > MAX_TEXT_DIFF_TOKENS ||
-    newTokens.length > MAX_TEXT_DIFF_TOKENS ||
-    oldTokens.length * newTokens.length > MAX_TEXT_DIFF_MATRIX_CELLS
+    (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) ||
+    code === 35 ||
+    code === 64 ||
+    code === 95
   );
 }
 
 function diffTextTokens(oldTokens: string[], newTokens: string[]): TokenDiffOperation[] {
+  if (oldTokens.length * newTokens.length > MAX_TEXT_DIFF_MATRIX_CELLS) {
+    return diffTextTokensByMatchingBlocks(oldTokens, newTokens);
+  }
+
   const oldLength = oldTokens.length;
   const newLength = newTokens.length;
   const matrix = Array.from({ length: oldLength + 1 }, () => new Uint16Array(newLength + 1));
@@ -552,6 +586,250 @@ function diffTextTokens(oldTokens: string[], newTokens: string[]): TokenDiffOper
   return operations;
 }
 
+function diffTextTokensByMatchingBlocks(
+  oldTokens: string[],
+  newTokens: string[]
+): TokenDiffOperation[] {
+  const operations: TokenDiffOperation[] = [];
+  const matches = findTextMatches(oldTokens, newTokens);
+  let oldIndex = 0;
+  let newIndex = 0;
+
+  matches.push({
+    oldStart: oldTokens.length,
+    newStart: newTokens.length,
+    length: 0
+  });
+
+  matches.forEach(match => {
+    if (oldIndex < match.oldStart) {
+      pushTokenOperationRange(operations, 'removed', oldTokens, oldIndex, match.oldStart);
+    }
+
+    if (newIndex < match.newStart) {
+      pushTokenOperationRange(operations, 'added', newTokens, newIndex, match.newStart);
+    }
+
+    if (match.length > 0) {
+      pushTokenOperationRange(
+        operations,
+        'equal',
+        newTokens,
+        match.newStart,
+        match.newStart + match.length
+      );
+    }
+
+    oldIndex = match.oldStart + match.length;
+    newIndex = match.newStart + match.length;
+  });
+
+  return operations;
+}
+
+function findTextMatches(oldTokens: string[], newTokens: string[]): TextMatch[] {
+  const matches: TextMatch[] = [];
+  const stack: Array<{
+    oldStart: number;
+    oldEnd: number;
+    newStart: number;
+    newEnd: number;
+    depth: number;
+  }> = [
+    {
+      oldStart: 0,
+      oldEnd: oldTokens.length,
+      newStart: 0,
+      newEnd: newTokens.length,
+      depth: 0
+    }
+  ];
+
+  while (stack.length > 0) {
+    const range = stack.pop();
+
+    if (!range || range.oldStart >= range.oldEnd || range.newStart >= range.newEnd) {
+      continue;
+    }
+
+    if (range.depth >= MAX_TEXT_MATCH_STACK_DEPTH) {
+      continue;
+    }
+
+    const match = findBestTextMatch(
+      oldTokens,
+      newTokens,
+      range.oldStart,
+      range.oldEnd,
+      range.newStart,
+      range.newEnd
+    );
+
+    if (!match || match.length === 0) {
+      continue;
+    }
+
+    matches.push(match);
+
+    stack.push({
+      oldStart: match.oldStart + match.length,
+      oldEnd: range.oldEnd,
+      newStart: match.newStart + match.length,
+      newEnd: range.newEnd,
+      depth: range.depth + 1
+    });
+    stack.push({
+      oldStart: range.oldStart,
+      oldEnd: match.oldStart,
+      newStart: range.newStart,
+      newEnd: match.newStart,
+      depth: range.depth + 1
+    });
+  }
+
+  matches.sort((left, right) => left.oldStart - right.oldStart || left.newStart - right.newStart);
+  return matches;
+}
+
+function findBestTextMatch(
+  oldTokens: string[],
+  newTokens: string[],
+  oldStart: number,
+  oldEnd: number,
+  newStart: number,
+  newEnd: number
+): TextMatch | null {
+  let best: TextMatch | null = null;
+  const maxBlockSize = Math.min(MAX_TEXT_MATCH_BLOCK_SIZE, oldEnd - oldStart, newEnd - newStart);
+
+  for (let blockSize = maxBlockSize; blockSize >= 1; blockSize -= 1) {
+    const newBlockIndex = createTextBlockIndex(newTokens, newStart, newEnd, blockSize);
+
+    for (let oldIndex = oldStart; oldIndex <= oldEnd - blockSize; oldIndex += 1) {
+      const positions = newBlockIndex.get(createTextBlockKey(oldTokens, oldIndex, blockSize));
+
+      if (!positions) {
+        continue;
+      }
+
+      positions.forEach(newIndex => {
+        const match = expandTextMatch(
+          oldTokens,
+          newTokens,
+          oldIndex,
+          newIndex,
+          blockSize,
+          oldStart,
+          oldEnd,
+          newStart,
+          newEnd
+        );
+
+        if (
+          !best ||
+          match.length > best.length ||
+          (match.length === best.length &&
+            (match.oldStart < best.oldStart ||
+              (match.oldStart === best.oldStart && match.newStart < best.newStart)))
+        ) {
+          best = match;
+        }
+      });
+    }
+
+    if (best) {
+      return best;
+    }
+  }
+
+  return best;
+}
+
+function createTextBlockIndex(
+  tokens: string[],
+  start: number,
+  end: number,
+  blockSize: number
+): Map<string, number[]> {
+  const index = new Map<string, number[]>();
+  const maxPositionsPerBlock = getMaxTextBlockPositions(end - start, blockSize);
+
+  for (let position = start; position <= end - blockSize; position += 1) {
+    const key = createTextBlockKey(tokens, position, blockSize);
+    const positions = index.get(key);
+
+    if (positions) {
+      if (positions.length < maxPositionsPerBlock) {
+        positions.push(position);
+      }
+
+      continue;
+    }
+
+    index.set(key, [position]);
+  }
+
+  return index;
+}
+
+function getMaxTextBlockPositions(tokenCount: number, blockSize: number): number {
+  if (blockSize > 1) {
+    return Math.max(16, Math.ceil(tokenCount * 0.05));
+  }
+
+  return Math.max(8, Math.ceil(tokenCount * 0.015));
+}
+
+function createTextBlockKey(tokens: string[], start: number, blockSize: number): string {
+  let key = tokens[start];
+
+  for (let offset = 1; offset < blockSize; offset += 1) {
+    key += '\u0000' + tokens[start + offset];
+  }
+
+  return key;
+}
+
+function expandTextMatch(
+  oldTokens: string[],
+  newTokens: string[],
+  oldIndex: number,
+  newIndex: number,
+  blockSize: number,
+  oldStart: number,
+  oldEnd: number,
+  newStart: number,
+  newEnd: number
+): TextMatch {
+  let matchOldStart = oldIndex;
+  let matchNewStart = newIndex;
+  let length = blockSize;
+
+  while (
+    matchOldStart > oldStart &&
+    matchNewStart > newStart &&
+    oldTokens[matchOldStart - 1] === newTokens[matchNewStart - 1]
+  ) {
+    matchOldStart -= 1;
+    matchNewStart -= 1;
+    length += 1;
+  }
+
+  while (
+    matchOldStart + length < oldEnd &&
+    matchNewStart + length < newEnd &&
+    oldTokens[matchOldStart + length] === newTokens[matchNewStart + length]
+  ) {
+    length += 1;
+  }
+
+  return {
+    oldStart: matchOldStart,
+    newStart: matchNewStart,
+    length
+  };
+}
+
 function pushTokenOperation(
   operations: TokenDiffOperation[],
   type: TokenDiffOperation['type'],
@@ -570,78 +848,33 @@ function pushTokenOperation(
   });
 }
 
-function refineTokenOperations(operations: TokenDiffOperation[]): TextDiffSegment[] {
+function pushTokenOperationRange(
+  operations: TokenDiffOperation[],
+  type: TokenDiffOperation['type'],
+  tokens: string[],
+  start: number,
+  end: number
+): void {
+  for (let index = start; index < end; index += 1) {
+    pushTokenOperation(operations, type, tokens[index]);
+  }
+}
+
+function tokenOperationsToSegments(operations: TokenDiffOperation[]): TextDiffSegment[] {
   const segments: TextDiffSegment[] = [];
 
-  for (let index = 0; index < operations.length; index += 1) {
-    const current = operations[index];
-    const next = operations[index + 1];
-
-    if (
-      next &&
-      current.type !== 'equal' &&
-      next.type !== 'equal' &&
-      current.type !== next.type
-    ) {
-      const removedText =
-        current.type === 'removed' ? current.tokens.join('') : next.tokens.join('');
-      const addedText = current.type === 'added' ? current.tokens.join('') : next.tokens.join('');
-
-      segments.push(...refineReplacementSegments(removedText, addedText));
-      index += 1;
-      continue;
-    }
-
-    const text = current.tokens.join('');
+  operations.forEach(operation => {
+    const text = operation.tokens.join('');
 
     if (text) {
       segments.push({
-        type: current.type,
+        type: operation.type,
         text
       });
     }
-  }
+  });
 
   return mergeTextSegments(segments);
-}
-
-function refineReplacementSegments(oldText: string, newText: string): TextDiffSegment[] {
-  const prefixLength = getCommonPrefixLength(oldText, newText);
-  const suffixLength = getCommonSuffixLength(oldText, newText, prefixLength);
-  const segments: TextDiffSegment[] = [];
-
-  if (prefixLength > 0) {
-    segments.push({
-      type: 'equal',
-      text: oldText.slice(0, prefixLength)
-    });
-  }
-
-  const oldCore = oldText.slice(prefixLength, oldText.length - suffixLength);
-  const newCore = newText.slice(prefixLength, newText.length - suffixLength);
-
-  if (oldCore) {
-    segments.push({
-      type: 'removed',
-      text: oldCore
-    });
-  }
-
-  if (newCore) {
-    segments.push({
-      type: 'added',
-      text: newCore
-    });
-  }
-
-  if (suffixLength > 0) {
-    segments.push({
-      type: 'equal',
-      text: oldText.slice(oldText.length - suffixLength)
-    });
-  }
-
-  return segments;
 }
 
 function mergeTextSegments(segments: TextDiffSegment[]): TextDiffSegment[] {
@@ -666,33 +899,6 @@ function mergeTextSegments(segments: TextDiffSegment[]): TextDiffSegment[] {
   });
 
   return merged;
-}
-
-function getCommonPrefixLength(left: string, right: string): number {
-  const length = Math.min(left.length, right.length);
-  let index = 0;
-
-  while (index < length && left[index] === right[index]) {
-    index += 1;
-  }
-
-  return index;
-}
-
-function getCommonSuffixLength(left: string, right: string, prefixLength: number): number {
-  const leftRemaining = left.length - prefixLength;
-  const rightRemaining = right.length - prefixLength;
-  const length = Math.min(leftRemaining, rightRemaining);
-  let index = 0;
-
-  while (
-    index < length &&
-    left[left.length - 1 - index] === right[right.length - 1 - index]
-  ) {
-    index += 1;
-  }
-
-  return index;
 }
 
 function createImageWrapper(
