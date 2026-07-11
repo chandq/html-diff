@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.7](https://github.com/chandq/html-diff/compare/v0.1.6...v0.1.7) (2026-07-11)
+
+
+### Bug Fixes
+
+* improve the diff algorithm to support tokenization comparison using Chinese, punctuation, and English/numeric token methods ([1d28203](https://github.com/chandq/html-diff/commit/1d28203cf8eac30f99c2e3e249334b8818633ac1))
+
 ### [0.1.6](https://github.com/chandq/html-diff/compare/v0.1.5...v0.1.6) (2026-07-10)
 
 

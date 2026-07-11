@@ -1,6 +1,6 @@
 {
   "name": "@chandq/html-diff",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Reusable HTML diff visualizer for browser apps with isolated styles and Vite builds.",
   "author": "chandq",
   "license": "MIT",
