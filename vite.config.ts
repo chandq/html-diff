@@ -15,22 +15,38 @@ const libraryConfig: UserConfig['build'] = {
   emptyOutDir: true,
   lib: {
     entry: resolve(__dirname, 'src/index.ts'),
-    name: 'htmlDiff',
-    formats: ['es', 'cjs', 'umd'],
-    fileName: format => {
-      if (format === 'es') {
-        return 'index.mjs';
-      }
-
-      if (format === 'cjs') {
-        return 'index.cjs';
-      }
-
-      return 'index.umd.js';
-    }
+    name: 'htmlDiff'
   },
   outDir: 'dist',
-  sourcemap: true
+  rollupOptions: {
+    output: [
+      {
+        format: 'es',
+        dir: 'dist/es',
+        entryFileNames: '[name].mjs',
+        chunkFileNames: '[name]-[hash].mjs',
+        preserveModules: true,
+        preserveModulesRoot: 'src'
+      },
+      {
+        format: 'cjs',
+        dir: 'dist/cjs',
+        entryFileNames: '[name].cjs',
+        chunkFileNames: '[name]-[hash].cjs',
+        exports: 'named',
+        preserveModules: true,
+        preserveModulesRoot: 'src'
+      },
+      {
+        format: 'umd',
+        dir: 'dist',
+        entryFileNames: 'index.umd.js',
+        name: 'htmlDiff',
+        exports: 'named'
+      }
+    ]
+  },
+  sourcemap: false
 };
 
 const demoConfig: UserConfig['build'] = {

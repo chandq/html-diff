@@ -43,6 +43,18 @@ renderHtmlDiff({
 });
 ```
 
+### On-Demand Imports
+
+For smaller consumer bundles, import only the module you need:
+
+```ts
+import { renderHtmlDiff } from '@chandq/html-diff/render';
+import { parseHtmlToVNode } from '@chandq/html-diff/parse';
+import { diffChildren } from '@chandq/html-diff/diff';
+```
+
+The root entry remains available for convenience, while ESM and CJS builds are also emitted as split modules for better tree-shaking and direct subpath imports.
+
 ## API
 
 ### `renderHtmlDiff(options)`
