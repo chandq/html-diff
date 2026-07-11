@@ -3,6 +3,7 @@
 [![Release](https://github.com/chandq/html-diff/actions/workflows/release.yml/badge.svg)](https://github.com/chandq/html-diff/actions/workflows/release.yml)
 [![html-diff](https://img.shields.io/github/package-json/v/chandq/html-diff?style=flat-square)](https://www.npmjs.com/package/@chandq/html-diff)
 [![license:MIT](https://img.shields.io/npm/l/vue.svg?sanitize=true)](https://github.com/chandq/html-diff/blob/main/LICENSE)
+[![codecov](https://codecov.io/gh/chandq/html-diff/graph/badge.svg?token=VZ6TERPGI9)](https://codecov.io/gh/chandq/html-diff)
 
 Framework-agnostic HTML visual diff renderer for rich text, inline markup, images, and editor previews.
 

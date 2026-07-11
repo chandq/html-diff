@@ -19,22 +19,22 @@
   ],
   "typesVersions": {
     "*": {
-      "index.d.ts": [
+      "index": [
         "dist/types/index.d.ts"
       ],
-      "render.d.ts": [
+      "render": [
         "dist/types/render.d.ts"
       ],
-      "parse.d.ts": [
+      "parse": [
         "dist/types/parse.d.ts"
       ],
-      "diff.d.ts": [
+      "diff": [
         "dist/types/diff.d.ts"
       ],
-      "constants.d.ts": [
+      "constants": [
         "dist/types/constants.d.ts"
       ],
-      "types.d.ts": [
+      "types": [
         "dist/types/types.d.ts"
       ]
     }
@@ -88,11 +88,13 @@
     "prepublishOnly": "npm run build && npm run test:unit"
   },
   "keywords": [
+    "@chandq/html-diff",
     "html-diff",
     "dom-diff",
     "visual-diff",
-    "vite",
-    "typescript"
+    "diff",
+    "html-diff-ts",
+    "html-diff-js"
   ],
   "repository": {
     "type": "git",
@@ -103,13 +105,12 @@
   },
   "homepage": "https://chandq.github.io/html-diff/",
   "devDependencies": {
-    "@types/node": "^26.1.1",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^25.0.1",
     "standard-version": "^9.5.0",
     "typescript": "^5.7.3",
-    "vite": "^6.0.7",
+    "vite": "^8.1.4",
     "vite-plugin-banner": "^0.8.1",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.10"
   }
 }

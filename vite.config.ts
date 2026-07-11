@@ -1,5 +1,4 @@
 import { resolve } from 'node:path';
-import type { UserConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
 import pkg from './package.json';
 import banner from 'vite-plugin-banner'
@@ -7,52 +6,57 @@ import banner from 'vite-plugin-banner'
 const bannerString =
   '/*!\n' +
   ` * ${pkg.name} v${pkg.version}\n` +
-  ` * (c) 2025-present chandq\n` +
+  ` * (c) 2026-present chandq\n` +
   ' * Released under the MIT License.\n' +
   ' */\n';
 
-const libraryConfig: UserConfig['build'] = {
+const libraryConfig = {
   emptyOutDir: true,
   lib: {
     entry: resolve(__dirname, 'src/index.ts'),
     name: 'htmlDiff'
   },
   outDir: 'dist',
-  rollupOptions: {
+
+  minify: false,
+  rolldownOptions: {
     output: [
       {
         format: 'es',
         dir: 'dist/es',
         entryFileNames: '[name].mjs',
-        chunkFileNames: '[name]-[hash].mjs',
+        chunkFileNames: '[name].mjs',
         preserveModules: true,
-        preserveModulesRoot: 'src'
+        preserveModulesRoot: 'src',
+        banner: bannerString
       },
       {
         format: 'cjs',
         dir: 'dist/cjs',
         entryFileNames: '[name].cjs',
-        chunkFileNames: '[name]-[hash].cjs',
+        chunkFileNames: '[name].cjs',
         exports: 'named',
         preserveModules: true,
-        preserveModulesRoot: 'src'
+        preserveModulesRoot: 'src',
+        banner: bannerString
       },
       {
         format: 'umd',
         dir: 'dist',
         entryFileNames: 'index.umd.js',
         name: 'htmlDiff',
-        exports: 'named'
+        exports: 'named',
+        banner: bannerString
       }
     ]
   },
   sourcemap: false
 };
 
-const demoConfig: UserConfig['build'] = {
+const demoConfig = {
   emptyOutDir: true,
   outDir: 'docs',
-  sourcemap: true
+  sourcemap: false
 };
 
 // @ts-ignore
@@ -69,7 +73,7 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       globals: true,
       coverage: {
-        reporter: ['text', 'html']
+        reporter: ['lcov', 'text', 'html']
       }
     }
   };
