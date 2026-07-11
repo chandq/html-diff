@@ -6,7 +6,23 @@
 
 Browser HTML diff renderer for rich-text previews, CMS review pages, and editor integrations.
 
-It accepts two HTML strings and returns a visual diff as a mounted view, `DocumentFragment`, or serialized HTML. The renderer is style-safe by default and handles text, inline markup, images, and preformatted code blocks.
+It accepts two HTML strings and returns a visual diff as a mounted view, `DocumentFragment`, or serialized HTML. The renderer is framework-agnostic, style-safe by default, and handles text, inline markup, images, and preformatted code blocks.
+
+## Core Features
+
+- **Framework agnostic**: works with Vue, React, Svelte, Angular, plain DOM, or any UI layer that can provide two HTML strings.
+- **Accurate inline text diff**: highlights localized word, number, punctuation, and CJK text changes without replacing whole paragraphs.
+- **HTML-aware node matching**: aligns similar sibling nodes to reduce cascading false positives when content is inserted, removed, or reordered.
+- **Image diff support**: renders added, removed, and replaced images with dedicated visual wrappers while preserving image attributes.
+- **Style isolation options**: choose `shadow`, `scoped`, or `none` mode depending on the host app and CSS requirements.
+- **Themeable output**: customize add/remove colors and page padding without rewriting the renderer styles.
+
+## Highlights
+
+- **Drop-in for any framework**: no component runtime dependency, no framework adapter required, and no assumptions about your editor stack.
+- **Precise for real rich text**: designed for mixed Chinese, English, numbers, links, inline tags, lists, images, and preformatted code blocks.
+- **Performance-conscious core diff**: uses exact LCS for small text, matching blocks for long text, cached node similarity, and bounded fallbacks for large child lists.
+- **Embedding-friendly API**: returns mounted UI, fragments, serialized HTML, stats, and a `destroy()` hook for preview pages and editor workflows.
 
 ## Install
 
