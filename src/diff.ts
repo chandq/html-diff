@@ -7,6 +7,11 @@ const MIN_ALIGNMENT_SCORE = 0.1;
 const MAX_TEXT_SIMILARITY_MATRIX_CELLS = 4096;
 const TEXT_WORD_PATTERN = /\S+/g;
 
+interface AlignmentContext {
+  textCache: WeakMap<VNode, string>;
+  scoreCache: WeakMap<VNode, WeakMap<VNode, number>>;
+}
+
 export function isSameNode(oldNode: VNode, newNode: VNode): boolean {
   if (oldNode.type !== newNode.type) {
     return false;
@@ -43,6 +48,7 @@ export function isSameNode(oldNode: VNode, newNode: VNode): boolean {
 }
 
 export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[] {
+  const context = createAlignmentContext();
   let start = 0;
   let oldEnd = oldChildren.length - 1;
   let newEnd = newChildren.length - 1;
@@ -50,10 +56,13 @@ export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[
   const prefix: Patch[] = [];
   const suffix: Patch[] = [];
 
+  // Trim only high-confidence equal edges. Similar-but-shifted siblings stay in the
+  // middle section so the weighted matcher can align insertions without cascading changes.
+
   while (
     start <= oldEnd &&
     start <= newEnd &&
-    isStrongAlignment(oldChildren[start], newChildren[start])
+    isStrongAlignment(oldChildren[start], newChildren[start], context)
   ) {
     prefix.push({
       status: 'merged',
@@ -66,7 +75,7 @@ export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[
   while (
     oldEnd >= start &&
     newEnd >= start &&
-    isStrongAlignment(oldChildren[oldEnd], newChildren[newEnd])
+    isStrongAlignment(oldChildren[oldEnd], newChildren[newEnd], context)
   ) {
     suffix.push({
       status: 'merged',
@@ -77,7 +86,7 @@ export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[
     newEnd -= 1;
   }
 
-  const middle = diffMiddleChildren(oldChildren, newChildren, start, oldEnd, newEnd);
+  const middle = diffMiddleChildren(oldChildren, newChildren, start, oldEnd, newEnd, context);
 
   if (suffix.length > 1) {
     suffix.reverse();
@@ -104,12 +113,15 @@ export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[
   return patches;
 }
 
+// The middle section uses weighted LCS over node similarity. It costs more than a
+// one-step greedy scan, so large child lists fall back to the bounded greedy path.
 function diffMiddleChildren(
   oldChildren: VNode[],
   newChildren: VNode[],
   start: number,
   oldEnd: number,
-  newEnd: number
+  newEnd: number,
+  context: AlignmentContext
 ): Patch[] {
   const oldLength = oldEnd - start + 1;
   const newLength = newEnd - start + 1;
@@ -123,7 +135,7 @@ function diffMiddleChildren(
   }
 
   if (oldLength * newLength > MAX_CHILD_DIFF_MATRIX_CELLS) {
-    return diffMiddleChildrenGreedy(oldChildren, newChildren, start, oldEnd, newEnd);
+    return diffMiddleChildrenGreedy(oldChildren, newChildren, start, oldEnd, newEnd, context);
   }
 
   const matrix = Array.from(
@@ -135,7 +147,8 @@ function diffMiddleChildren(
     for (let newOffset = newLength - 1; newOffset >= 0; newOffset -= 1) {
       const score = getAlignmentScore(
         oldChildren[start + oldOffset],
-        newChildren[start + newOffset]
+        newChildren[start + newOffset],
+        context
       );
       const diagonal =
         score >= MIN_ALIGNMENT_SCORE ? matrix[oldOffset + 1][newOffset + 1] + score : 0;
@@ -153,7 +166,7 @@ function diffMiddleChildren(
   while (oldOffset < oldLength && newOffset < newLength) {
     const oldNode = oldChildren[start + oldOffset];
     const newNode = newChildren[start + newOffset];
-    const score = getAlignmentScore(oldNode, newNode);
+    const score = getAlignmentScore(oldNode, newNode, context);
     const diagonalScore =
       score >= MIN_ALIGNMENT_SCORE ? matrix[oldOffset + 1][newOffset + 1] + score : 0;
 
@@ -212,7 +225,8 @@ function diffMiddleChildrenGreedy(
   newChildren: VNode[],
   start: number,
   oldEnd: number,
-  newEnd: number
+  newEnd: number,
+  context: AlignmentContext
 ): Patch[] {
   const patches: Patch[] = [];
   let oldIndex = start;
@@ -237,7 +251,7 @@ function diffMiddleChildrenGreedy(
       continue;
     }
 
-    const currentScore = getAlignmentScore(oldChildren[oldIndex], newChildren[newIndex]);
+    const currentScore = getAlignmentScore(oldChildren[oldIndex], newChildren[newIndex], context);
 
     if (currentScore >= MIN_ALIGNMENT_SCORE) {
       patches.push({
@@ -252,7 +266,7 @@ function diffMiddleChildrenGreedy(
 
     if (
       newIndex + 1 <= newEnd &&
-      getAlignmentScore(oldChildren[oldIndex], newChildren[newIndex + 1]) >= MIN_ALIGNMENT_SCORE
+      getAlignmentScore(oldChildren[oldIndex], newChildren[newIndex + 1], context) >= MIN_ALIGNMENT_SCORE
     ) {
       patches.push({
         status: 'added',
@@ -264,7 +278,7 @@ function diffMiddleChildrenGreedy(
 
     if (
       oldIndex + 1 <= oldEnd &&
-      getAlignmentScore(oldChildren[oldIndex + 1], newChildren[newIndex]) >= MIN_ALIGNMENT_SCORE
+      getAlignmentScore(oldChildren[oldIndex + 1], newChildren[newIndex], context) >= MIN_ALIGNMENT_SCORE
     ) {
       patches.push({
         status: 'removed',
@@ -315,11 +329,68 @@ function createRemovedPatches(oldChildren: VNode[], start: number, end: number):
   return patches;
 }
 
-function isStrongAlignment(oldNode: VNode, newNode: VNode): boolean {
-  return getAlignmentScore(oldNode, newNode) >= STRONG_ALIGNMENT_SCORE;
+// Per diffChildren call caches keep repeated subtree-text extraction and pair scoring cheap.
+// WeakMaps let the temporary data disappear once the vnode trees are no longer referenced.
+function createAlignmentContext(): AlignmentContext {
+  return {
+    textCache: new WeakMap(),
+    scoreCache: new WeakMap()
+  };
 }
 
-function getAlignmentScore(oldNode: VNode, newNode: VNode): number {
+function isStrongAlignment(
+  oldNode: VNode,
+  newNode: VNode,
+  context: AlignmentContext
+): boolean {
+  return getAlignmentScore(oldNode, newNode, context) >= STRONG_ALIGNMENT_SCORE;
+}
+
+function getAlignmentScore(
+  oldNode: VNode,
+  newNode: VNode,
+  context: AlignmentContext
+): number {
+  const cached = getCachedAlignmentScore(oldNode, newNode, context);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const score = computeAlignmentScore(oldNode, newNode, context);
+  setCachedAlignmentScore(oldNode, newNode, score, context);
+  return score;
+}
+
+function getCachedAlignmentScore(
+  oldNode: VNode,
+  newNode: VNode,
+  context: AlignmentContext
+): number | undefined {
+  return context.scoreCache.get(oldNode)?.get(newNode);
+}
+
+function setCachedAlignmentScore(
+  oldNode: VNode,
+  newNode: VNode,
+  score: number,
+  context: AlignmentContext
+): void {
+  let byNewNode = context.scoreCache.get(oldNode);
+
+  if (!byNewNode) {
+    byNewNode = new WeakMap();
+    context.scoreCache.set(oldNode, byNewNode);
+  }
+
+  byNewNode.set(newNode, score);
+}
+
+function computeAlignmentScore(
+  oldNode: VNode,
+  newNode: VNode,
+  context: AlignmentContext
+): number {
   if (oldNode.type !== newNode.type) {
     return 0;
   }
@@ -355,8 +426,8 @@ function getAlignmentScore(oldNode: VNode, newNode: VNode): number {
     return 0.9;
   }
 
-  const oldText = getNodeText(oldNode);
-  const newText = getNodeText(newNode);
+  const oldText = getNodeText(oldNode, context);
+  const newText = getNodeText(newNode, context);
   const textSimilarity = getTextSimilarity(oldText, newText);
   const attrBonus = attrsEqual(oldNode.attrs, newNode.attrs) ? 0.05 : 0;
 
@@ -367,16 +438,23 @@ function getAlignmentScore(oldNode: VNode, newNode: VNode): number {
   return Math.min(0.25 + textSimilarity * 0.75 + attrBonus, 1);
 }
 
-function getNodeText(node: VNode): string {
+function getNodeText(node: VNode, context: AlignmentContext): string {
+  const cached = context.textCache.get(node);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  let text: string;
+
   if (node.type === 'text') {
-    return node.text;
+    text = node.text;
+  } else {
+    text = node.children.map(child => getNodeText(child, context)).join('');
   }
 
-  if (node.type === 'root') {
-    return node.children.map(getNodeText).join('');
-  }
-
-  return node.children.map(getNodeText).join('');
+  context.textCache.set(node, text);
+  return text;
 }
 
 function getTextSimilarity(leftText: string, rightText: string): number {
@@ -427,29 +505,33 @@ function getWordSimilarity(left: string, right: string): number {
   return (matches * 2) / (leftWords.length + rightWords.length);
 }
 
+// LCS similarity only needs the previous row, not the full matrix, so this keeps memory O(n).
 function getCharacterSimilarity(left: string, right: string): number {
   if (left.length * right.length > MAX_TEXT_SIMILARITY_MATRIX_CELLS) {
     return 0;
   }
 
-  const matrix = Array.from(
-    { length: left.length + 1 },
-    () => new Uint16Array(right.length + 1)
-  );
+  let nextRow = new Uint16Array(right.length + 1);
+  let currentRow = new Uint16Array(right.length + 1);
 
   for (let leftIndex = left.length - 1; leftIndex >= 0; leftIndex -= 1) {
     for (let rightIndex = right.length - 1; rightIndex >= 0; rightIndex -= 1) {
       if (left[leftIndex] === right[rightIndex]) {
-        matrix[leftIndex][rightIndex] = matrix[leftIndex + 1][rightIndex + 1] + 1;
+        currentRow[rightIndex] = nextRow[rightIndex + 1] + 1;
         continue;
       }
 
-      matrix[leftIndex][rightIndex] =
-        matrix[leftIndex + 1][rightIndex] >= matrix[leftIndex][rightIndex + 1]
-          ? matrix[leftIndex + 1][rightIndex]
-          : matrix[leftIndex][rightIndex + 1];
+      currentRow[rightIndex] =
+        nextRow[rightIndex] >= currentRow[rightIndex + 1]
+          ? nextRow[rightIndex]
+          : currentRow[rightIndex + 1];
     }
+
+    const previousNextRow = nextRow;
+    nextRow = currentRow;
+    currentRow = previousNextRow;
+    currentRow.fill(0);
   }
 
-  return (matrix[0][0] * 2) / (left.length + right.length);
+  return (nextRow[0] * 2) / (left.length + right.length);
 }

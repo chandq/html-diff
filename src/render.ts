@@ -22,7 +22,7 @@ interface TextDiffSegment {
 
 interface TokenDiffOperation {
   type: 'equal' | 'added' | 'removed';
-  tokens: string[];
+  text: string;
 }
 
 interface TextMatch {
@@ -31,9 +31,12 @@ interface TextMatch {
   length: number;
 }
 
+type TextBlockIndex = Map<string, number[]>;
+
 const MAX_TEXT_DIFF_MATRIX_CELLS = 16384;
 const MAX_TEXT_MATCH_BLOCK_SIZE = 4;
 const MAX_TEXT_MATCH_STACK_DEPTH = 256;
+const MAX_TEXT_MATCH_CANDIDATES = 256;
 
 export function diffHtml(oldHtml: string, newHtml: string, options: DiffOptions = {}): DiffResult {
   const oldTree = parseHtmlToVNode(oldHtml, options);
@@ -512,7 +515,13 @@ function getTextTokenCharacterType(character: string): 'word' | 'space' | 'symbo
 }
 
 function isTextWhitespace(character: string): boolean {
-  return /\s|\u00a0/.test(character);
+  const code = character.charCodeAt(0);
+
+  if (code === 9 || code === 10 || code === 12 || code === 13 || code === 32 || code === 160) {
+    return true;
+  }
+
+  return /\s/.test(character);
 }
 
 function isTextWordCharacter(character: string): boolean {
@@ -529,6 +538,8 @@ function isTextWordCharacter(character: string): boolean {
 }
 
 function diffTextTokens(oldTokens: string[], newTokens: string[]): TokenDiffOperation[] {
+  // Small text nodes use exact LCS so inline replacements stay minimal. Larger nodes switch
+  // to matching blocks to avoid allocating an oldTokens x newTokens matrix.
   if (oldTokens.length * newTokens.length > MAX_TEXT_DIFF_MATRIX_CELLS) {
     return diffTextTokensByMatchingBlocks(oldTokens, newTokens);
   }
@@ -591,7 +602,8 @@ function diffTextTokensByMatchingBlocks(
   newTokens: string[]
 ): TokenDiffOperation[] {
   const operations: TokenDiffOperation[] = [];
-  const matches = findTextMatches(oldTokens, newTokens);
+  const blockIndexes = createTextBlockIndexes(newTokens);
+  const matches = findTextMatches(oldTokens, newTokens, blockIndexes);
   let oldIndex = 0;
   let newIndex = 0;
 
@@ -627,7 +639,13 @@ function diffTextTokensByMatchingBlocks(
   return operations;
 }
 
-function findTextMatches(oldTokens: string[], newTokens: string[]): TextMatch[] {
+// Recursively find the longest stable token runs, then diff the gaps around them.
+// The prebuilt indexes are shared across ranges so long text does not rebuild maps repeatedly.
+function findTextMatches(
+  oldTokens: string[],
+  newTokens: string[],
+  blockIndexes: TextBlockIndex[]
+): TextMatch[] {
   const matches: TextMatch[] = [];
   const stack: Array<{
     oldStart: number;
@@ -662,7 +680,8 @@ function findTextMatches(oldTokens: string[], newTokens: string[]): TextMatch[] 
       range.oldStart,
       range.oldEnd,
       range.newStart,
-      range.newEnd
+      range.newEnd,
+      blockIndexes
     );
 
     if (!match || match.length === 0) {
@@ -697,13 +716,14 @@ function findBestTextMatch(
   oldStart: number,
   oldEnd: number,
   newStart: number,
-  newEnd: number
+  newEnd: number,
+  blockIndexes: TextBlockIndex[]
 ): TextMatch | null {
   let best: TextMatch | null = null;
   const maxBlockSize = Math.min(MAX_TEXT_MATCH_BLOCK_SIZE, oldEnd - oldStart, newEnd - newStart);
 
   for (let blockSize = maxBlockSize; blockSize >= 1; blockSize -= 1) {
-    const newBlockIndex = createTextBlockIndex(newTokens, newStart, newEnd, blockSize);
+    const newBlockIndex = blockIndexes[blockSize];
 
     for (let oldIndex = oldStart; oldIndex <= oldEnd - blockSize; oldIndex += 1) {
       const positions = newBlockIndex.get(createTextBlockKey(oldTokens, oldIndex, blockSize));
@@ -712,7 +732,22 @@ function findBestTextMatch(
         continue;
       }
 
-      positions.forEach(newIndex => {
+      let checkedCandidates = 0;
+      const firstCandidate = findFirstPositionAtOrAfter(positions, newStart);
+
+      for (let index = firstCandidate; index < positions.length; index += 1) {
+        const newIndex = positions[index];
+
+        if (newIndex > newEnd - blockSize) {
+          break;
+        }
+
+        checkedCandidates += 1;
+
+        if (checkedCandidates > MAX_TEXT_MATCH_CANDIDATES) {
+          break;
+        }
+
         const match = expandTextMatch(
           oldTokens,
           newTokens,
@@ -734,7 +769,7 @@ function findBestTextMatch(
         ) {
           best = match;
         }
-      });
+      }
     }
 
     if (best) {
@@ -745,24 +780,46 @@ function findBestTextMatch(
   return best;
 }
 
-function createTextBlockIndex(
-  tokens: string[],
-  start: number,
-  end: number,
-  blockSize: number
-): Map<string, number[]> {
-  const index = new Map<string, number[]>();
-  const maxPositionsPerBlock = getMaxTextBlockPositions(end - start, blockSize);
+// Build token block indexes once per long text diff. Each token position appears in at most
+// MAX_TEXT_MATCH_BLOCK_SIZE indexes, keeping memory linear in the token count.
+function findFirstPositionAtOrAfter(positions: number[], target: number): number {
+  let low = 0;
+  let high = positions.length;
 
-  for (let position = start; position <= end - blockSize; position += 1) {
+  while (low < high) {
+    const middle = (low + high) >> 1;
+
+    if (positions[middle] < target) {
+      low = middle + 1;
+      continue;
+    }
+
+    high = middle;
+  }
+
+  return low;
+}
+
+function createTextBlockIndexes(tokens: string[]): TextBlockIndex[] {
+  const indexes: TextBlockIndex[] = [];
+  const maxBlockSize = Math.min(MAX_TEXT_MATCH_BLOCK_SIZE, tokens.length);
+
+  for (let blockSize = 1; blockSize <= maxBlockSize; blockSize += 1) {
+    indexes[blockSize] = createTextBlockIndex(tokens, blockSize);
+  }
+
+  return indexes;
+}
+
+function createTextBlockIndex(tokens: string[], blockSize: number): TextBlockIndex {
+  const index: TextBlockIndex = new Map();
+
+  for (let position = 0; position <= tokens.length - blockSize; position += 1) {
     const key = createTextBlockKey(tokens, position, blockSize);
     const positions = index.get(key);
 
     if (positions) {
-      if (positions.length < maxPositionsPerBlock) {
-        positions.push(position);
-      }
-
+      positions.push(position);
       continue;
     }
 
@@ -770,14 +827,6 @@ function createTextBlockIndex(
   }
 
   return index;
-}
-
-function getMaxTextBlockPositions(tokenCount: number, blockSize: number): number {
-  if (blockSize > 1) {
-    return Math.max(16, Math.ceil(tokenCount * 0.05));
-  }
-
-  return Math.max(8, Math.ceil(tokenCount * 0.015));
 }
 
 function createTextBlockKey(tokens: string[], start: number, blockSize: number): string {
@@ -838,13 +887,13 @@ function pushTokenOperation(
   const previous = operations[operations.length - 1];
 
   if (previous && previous.type === type) {
-    previous.tokens.push(token);
+    previous.text += token;
     return;
   }
 
   operations.push({
     type,
-    tokens: [token]
+    text: token
   });
 }
 
@@ -864,12 +913,10 @@ function tokenOperationsToSegments(operations: TokenDiffOperation[]): TextDiffSe
   const segments: TextDiffSegment[] = [];
 
   operations.forEach(operation => {
-    const text = operation.tokens.join('');
-
-    if (text) {
+    if (operation.text) {
       segments.push({
         type: operation.type,
-        text
+        text: operation.text
       });
     }
   });
