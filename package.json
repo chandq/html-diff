@@ -20,22 +20,22 @@
   "typesVersions": {
     "*": {
       "index": [
-        "dist/types/index.d.ts"
+        "./dist/types/index.d.ts"
       ],
       "render": [
-        "dist/types/render.d.ts"
+        "./dist/types/render.d.ts"
       ],
       "parse": [
-        "dist/types/parse.d.ts"
+        "./dist/types/parse.d.ts"
       ],
       "diff": [
-        "dist/types/diff.d.ts"
+        "./dist/types/diff.d.ts"
       ],
       "constants": [
-        "dist/types/constants.d.ts"
+        "./dist/types/constants.d.ts"
       ],
       "types": [
-        "dist/types/types.d.ts"
+        "./dist/types/types.d.ts"
       ]
     }
   },
