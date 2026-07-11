@@ -1,6 +1,6 @@
 {
   "name": "@chandq/html-diff",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Framework-agnostic HTML visual diff renderer for rich text, inline markup, images, and editor previews.",
   "author": "chandq",
   "license": "MIT",
