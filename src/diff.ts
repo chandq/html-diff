@@ -12,41 +12,6 @@ interface AlignmentContext {
   scoreCache: WeakMap<VNode, WeakMap<VNode, number>>;
 }
 
-export function isSameNode(oldNode: VNode, newNode: VNode): boolean {
-  if (oldNode.type !== newNode.type) {
-    return false;
-  }
-
-  if (oldNode.type === 'text' && newNode.type === 'text') {
-    return true;
-  }
-
-  if (oldNode.type === 'root' && newNode.type === 'root') {
-    return true;
-  }
-
-  if (oldNode.type !== 'element' || newNode.type !== 'element') {
-    return false;
-  }
-
-  if (oldNode.tagName !== newNode.tagName) {
-    return false;
-  }
-
-  const oldKey = getNodeKey(oldNode);
-  const newKey = getNodeKey(newNode);
-
-  if (oldKey || newKey) {
-    return oldKey === newKey;
-  }
-
-  if (oldNode.tagName === 'img') {
-    return true;
-  }
-
-  return true;
-}
-
 export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[] {
   const context = createAlignmentContext();
   let start = 0;

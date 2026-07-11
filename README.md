@@ -4,25 +4,17 @@
 [![html-diff](https://img.shields.io/github/package-json/v/chandq/html-diff?style=flat-square)](https://www.npmjs.com/package/@chandq/html-diff)
 [![license:MIT](https://img.shields.io/npm/l/vue.svg?sanitize=true)](https://github.com/chandq/html-diff/blob/main/LICENSE)
 
-Browser HTML diff renderer for rich-text previews, CMS review pages, and editor integrations.
+Framework-agnostic HTML visual diff renderer for rich text, inline markup, images, and editor previews.
 
-It accepts two HTML strings and returns a visual diff as a mounted view, `DocumentFragment`, or serialized HTML. The renderer is framework-agnostic, style-safe by default, and handles text, inline markup, images, and preformatted code blocks.
-
-## Core Features
-
-- **Framework agnostic**: works with Vue, React, Svelte, Angular, plain DOM, or any UI layer that can provide two HTML strings.
-- **Accurate inline text diff**: highlights localized word, number, punctuation, and CJK text changes without replacing whole paragraphs.
-- **HTML-aware node matching**: aligns similar sibling nodes to reduce cascading false positives when content is inserted, removed, or reordered.
-- **Image diff support**: renders added, removed, and replaced images with dedicated visual wrappers while preserving image attributes.
-- **Style isolation options**: choose `shadow`, `scoped`, or `none` mode depending on the host app and CSS requirements.
-- **Themeable output**: customize add/remove colors and page padding without rewriting the renderer styles.
+It accepts two HTML strings and returns a mounted diff view, a `DocumentFragment`, or serialized diff HTML. It works with Vue, React, Svelte, Angular, or plain DOM because the input is just HTML strings.
 
 ## Highlights
 
-- **Drop-in for any framework**: no component runtime dependency, no framework adapter required, and no assumptions about your editor stack.
-- **Precise for real rich text**: designed for mixed Chinese, English, numbers, links, inline tags, lists, images, and preformatted code blocks.
-- **Performance-conscious core diff**: uses exact LCS for small text, matching blocks for long text, cached node similarity, and bounded fallbacks for large child lists.
-- **Embedding-friendly API**: returns mounted UI, fragments, serialized HTML, stats, and a `destroy()` hook for preview pages and editor workflows.
+- Accurate inline text diff for mixed Chinese, English, numbers, punctuation, and rich text markup
+- HTML-aware node matching to reduce cascading false positives in lists and repeated blocks
+- Built-in image add, remove, and replace rendering
+- `shadow`, `scoped`, and `none` render modes for different embedding needs
+- Split ESM and CJS outputs for direct subpath imports and better tree-shaking
 
 ## Install
 
@@ -43,9 +35,7 @@ renderHtmlDiff({
 });
 ```
 
-### On-Demand Imports
-
-For smaller consumer bundles, import only the module you need:
+## On-Demand Imports
 
 ```ts
 import { renderHtmlDiff } from '@chandq/html-diff/render';
@@ -53,28 +43,11 @@ import { parseHtmlToVNode } from '@chandq/html-diff/parse';
 import { diffChildren } from '@chandq/html-diff/diff';
 ```
 
-The root entry remains available for convenience, while ESM and CJS builds are also emitted as split modules for better tree-shaking and direct subpath imports.
-
 ## API
 
 ### `renderHtmlDiff(options)`
 
 Mounts the diff into a container and returns the rendered root, fragment, stats, and `destroy()`.
-
-```ts
-renderHtmlDiff({
-  container,
-  oldHtml,
-  newHtml,
-  mode: 'shadow',
-  ignoreWhitespace: true,
-  theme: {
-    added: { backgroundColor: '#e6ffed', color: '#1a7f37' },
-    removed: { backgroundColor: '#ffeef0', color: '#cf222e' },
-    pagePadding: '16px'
-  }
-});
-```
 
 | Option             | Type                             | Default                                      |
 | ------------------ | -------------------------------- | -------------------------------------------- |
@@ -94,12 +67,9 @@ renderHtmlDiff({
 | `createHtmlDiffHtml(oldHtml, newHtml, options?)`     | serialized diff HTML  |
 | `parseHtmlToVNode(html, options?)`                   | internal VNode tree   |
 
-## Rendering Notes
+## Node Matching
 
-- `shadow` is the safest mode for embedding in existing pages.
-- `scoped` injects prefixed styles into the container when `ShadowRoot` is unavailable or unwanted.
-- `none` renders markup only; use it when you provide styles yourself.
-- Existing text styles are preserved where possible. Diff styles are additive and scoped.
+When a stable identity is available, the diff prefers `data-key`, `id`, or `key` to align matching nodes. `name` is intentionally not used as a node identity because it is often semantic or form-related rather than a reliable structural key.
 
 ## Development
 

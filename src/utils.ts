@@ -35,7 +35,7 @@ export function attrsEqual(
 }
 
 export function getNodeKey(node: ElementVNode): string | undefined {
-  return node.attrs['data-key'] || node.attrs.id || node.attrs.key || node.attrs.name;
+  return node.attrs['data-key'] || node.attrs.id || node.attrs.key;
 }
 
 export function cloneStats(stats: DiffStats): DiffStats {

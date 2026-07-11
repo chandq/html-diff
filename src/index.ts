@@ -1,5 +1,5 @@
 export { DEFAULT_DIFF_THEME, DIFF_STYLE_TEXT, ROOT_CLASS, createDiffStyleText } from './constants';
-export { diffChildren, isSameNode } from './diff';
+export { diffChildren } from './diff';
 export { parseHtmlToVNode } from './parse';
 export { createHtmlDiffFragment, createHtmlDiffHtml, diffHtml, renderHtmlDiff } from './render';
 export type {
