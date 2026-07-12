@@ -11,7 +11,7 @@ import type {
   RenderResult,
   RootVNode,
   TextVNode,
-  VNode
+  VNode,
 } from './types';
 import { attrsEqual, cloneStats, countRenderableNodes, createStats } from './utils';
 
@@ -47,30 +47,22 @@ export function diffHtml(oldHtml: string, newHtml: string, options: DiffOptions 
 
   return {
     fragment,
-    stats
+    stats,
   };
 }
 
-export function createHtmlDiffFragment(
-  oldHtml: string,
-  newHtml: string,
-  options: DiffOptions = {}
-): DocumentFragment {
+export function createHtmlDiffFragment(oldHtml: string, newHtml: string, options: DiffOptions = {}): DocumentFragment {
   return diffHtml(oldHtml, newHtml, options).fragment;
 }
 
-export function createHtmlDiffHtml(
-  oldHtml: string,
-  newHtml: string,
-  options: DiffOptions = {}
-): string {
+export function createHtmlDiffHtml(oldHtml: string, newHtml: string, options: DiffOptions = {}): string {
   const documentNode = document.implementation.createHTMLDocument('html-diff-serialize');
   const stats = createStats();
   const merged = mergeNodes(
     parseHtmlToVNode(oldHtml, options),
     parseHtmlToVNode(newHtml, options),
     documentNode,
-    stats
+    stats,
   );
 
   const wrapper = documentNode.createElement('div');
@@ -107,7 +99,7 @@ export function renderHtmlDiff(options: RenderHtmlDiffOptions): RenderResult {
     root,
     shadowRoot: mountResult.shadowRoot,
     html,
-    destroy: mountResult.destroy
+    destroy: mountResult.destroy,
   };
 }
 
@@ -123,7 +115,7 @@ function mountIntoContainer(
   container: HTMLElement,
   root: HTMLElement,
   mode: RenderMode,
-  theme: DiffOptions['theme']
+  theme: DiffOptions['theme'],
 ): { destroy: () => void; shadowRoot?: ShadowRoot } {
   container.replaceChildren();
 
@@ -140,7 +132,7 @@ function mountIntoContainer(
       shadowRoot,
       destroy: () => {
         container.replaceChildren();
-      }
+      },
     };
   }
 
@@ -153,7 +145,7 @@ function mountIntoContainer(
   return {
     destroy: () => {
       container.replaceChildren();
-    }
+    },
   };
 }
 
@@ -168,7 +160,7 @@ function mergeNodes(
   oldNode: VNode | undefined,
   newNode: VNode | undefined,
   documentNode: Document,
-  stats: DiffStats
+  stats: DiffStats,
 ): Node {
   if (!oldNode && !newNode) {
     return documentNode.createDocumentFragment();
@@ -216,16 +208,11 @@ function mergeNodes(
   return mergeElement(oldNode, newNode, documentNode, stats);
 }
 
-function mergeRoot(
-  oldNode: RootVNode,
-  newNode: RootVNode,
-  documentNode: Document,
-  stats: DiffStats
-): DocumentFragment {
+function mergeRoot(oldNode: RootVNode, newNode: RootVNode, documentNode: Document, stats: DiffStats): DocumentFragment {
   const fragment = documentNode.createDocumentFragment();
   const patches = diffChildren(oldNode.children, newNode.children);
 
-  patches.forEach(patch => {
+  patches.forEach((patch) => {
     if (patch.status === 'added') {
       fragment.appendChild(wrapAddedNode(patch.node, documentNode, stats));
       return;
@@ -242,12 +229,7 @@ function mergeRoot(
   return fragment;
 }
 
-function mergeText(
-  oldNode: TextVNode,
-  newNode: TextVNode,
-  documentNode: Document,
-  stats: DiffStats
-): Node {
+function mergeText(oldNode: TextVNode, newNode: TextVNode, documentNode: Document, stats: DiffStats): Node {
   if (oldNode.text === newNode.text) {
     return documentNode.createTextNode(newNode.text);
   }
@@ -257,7 +239,7 @@ function mergeText(
   const segments = diffTextSegments(oldNode.text, newNode.text);
   let hasMarker = false;
 
-  segments.forEach(segment => {
+  segments.forEach((segment) => {
     if (!segment.text) {
       return;
     }
@@ -278,7 +260,7 @@ function mergeElement(
   oldNode: ElementVNode,
   newNode: ElementVNode,
   documentNode: Document,
-  stats: DiffStats
+  stats: DiffStats,
 ): HTMLElement {
   const element = documentNode.createElement(newNode.tagName);
   applyAttrs(element, newNode.attrs);
@@ -288,7 +270,7 @@ function mergeElement(
   }
 
   const patches = diffChildren(oldNode.children, newNode.children);
-  patches.forEach(patch => {
+  patches.forEach((patch) => {
     if (patch.status === 'added') {
       element.appendChild(wrapAddedNode(patch.node, documentNode, stats));
       return;
@@ -305,12 +287,7 @@ function mergeElement(
   return element;
 }
 
-function mergeImage(
-  oldNode: ElementVNode,
-  newNode: ElementVNode,
-  documentNode: Document,
-  stats: DiffStats
-): Node {
+function mergeImage(oldNode: ElementVNode, newNode: ElementVNode, documentNode: Document, stats: DiffStats): Node {
   if (oldNode.attrs.src === newNode.attrs.src && attrsEqual(oldNode.attrs, newNode.attrs)) {
     const element = documentNode.createElement('img');
     applyAttrs(element, newNode.attrs);
@@ -322,13 +299,13 @@ function mergeImage(
   wrapper.appendChild(
     createImageStage('Previous image', oldNode.attrs, documentNode, {
       imageClassName: 'shd-image-old',
-      roleLabel: 'Before'
-    })
+      roleLabel: 'Before',
+    }),
   );
   wrapper.appendChild(
     createImageStage('Current image', newNode.attrs, documentNode, {
-      roleLabel: 'After'
-    })
+      roleLabel: 'After',
+    }),
   );
   return wrapper;
 }
@@ -342,7 +319,7 @@ function wrapAddedNodeInternal(
   documentNode: Document,
   stats: DiffStats,
   shouldCount: boolean,
-  suppressNestedImageDiff: boolean
+  suppressNestedImageDiff: boolean,
 ): Node {
   if (shouldCount) {
     stats.added += countRenderableNodes(node);
@@ -350,7 +327,7 @@ function wrapAddedNodeInternal(
 
   if (node.type === 'root') {
     const fragment = documentNode.createDocumentFragment();
-    node.children.forEach(child => {
+    node.children.forEach((child) => {
       fragment.appendChild(wrapAddedNodeInternal(child, documentNode, stats, false, false));
     });
     return fragment;
@@ -370,7 +347,7 @@ function wrapAddedNodeInternal(
   applyAttrs(element, node.attrs);
   applyDiffState(element, 'added');
   applyMediaDiffState(element, node, 'added');
-  node.children.forEach(child => {
+  node.children.forEach((child) => {
     element.appendChild(wrapAddedNodeInternal(child, documentNode, stats, false, true));
   });
   return element;
@@ -385,7 +362,7 @@ function wrapRemovedNodeInternal(
   documentNode: Document,
   stats: DiffStats,
   shouldCount: boolean,
-  suppressNestedImageDiff: boolean
+  suppressNestedImageDiff: boolean,
 ): Node {
   if (shouldCount) {
     stats.removed += countRenderableNodes(node);
@@ -393,7 +370,7 @@ function wrapRemovedNodeInternal(
 
   if (node.type === 'root') {
     const fragment = documentNode.createDocumentFragment();
-    node.children.forEach(child => {
+    node.children.forEach((child) => {
       fragment.appendChild(wrapRemovedNodeInternal(child, documentNode, stats, false, false));
     });
     return fragment;
@@ -413,7 +390,7 @@ function wrapRemovedNodeInternal(
   applyAttrs(element, node.attrs);
   applyDiffState(element, 'removed');
   applyMediaDiffState(element, node, 'removed');
-  node.children.forEach(child => {
+  node.children.forEach((child) => {
     element.appendChild(wrapRemovedNodeInternal(child, documentNode, stats, false, true));
   });
   return element;
@@ -423,7 +400,7 @@ function createReplacementFragment(
   oldNode: VNode,
   newNode: VNode,
   documentNode: Document,
-  stats: DiffStats
+  stats: DiffStats,
 ): DocumentFragment {
   const fragment = documentNode.createDocumentFragment();
   fragment.appendChild(wrapRemovedNode(oldNode, documentNode, stats));
@@ -431,11 +408,7 @@ function createReplacementFragment(
   return fragment;
 }
 
-function createTextMarker(
-  state: 'added' | 'removed',
-  text: string,
-  documentNode: Document
-): HTMLElement {
+function createTextMarker(state: 'added' | 'removed', text: string, documentNode: Document): HTMLElement {
   const element = documentNode.createElement('span');
   element.className = 'shd-text-marker';
   element.dataset.shdMarker = 'text';
@@ -597,10 +570,7 @@ function diffTextTokens(oldTokens: string[], newTokens: string[]): TokenDiffOper
   return operations;
 }
 
-function diffTextTokensByMatchingBlocks(
-  oldTokens: string[],
-  newTokens: string[]
-): TokenDiffOperation[] {
+function diffTextTokensByMatchingBlocks(oldTokens: string[], newTokens: string[]): TokenDiffOperation[] {
   const operations: TokenDiffOperation[] = [];
   const blockIndexes = createTextBlockIndexes(newTokens);
   const matches = findTextMatches(oldTokens, newTokens, blockIndexes);
@@ -610,10 +580,10 @@ function diffTextTokensByMatchingBlocks(
   matches.push({
     oldStart: oldTokens.length,
     newStart: newTokens.length,
-    length: 0
+    length: 0,
   });
 
-  matches.forEach(match => {
+  matches.forEach((match) => {
     if (oldIndex < match.oldStart) {
       pushTokenOperationRange(operations, 'removed', oldTokens, oldIndex, match.oldStart);
     }
@@ -623,13 +593,7 @@ function diffTextTokensByMatchingBlocks(
     }
 
     if (match.length > 0) {
-      pushTokenOperationRange(
-        operations,
-        'equal',
-        newTokens,
-        match.newStart,
-        match.newStart + match.length
-      );
+      pushTokenOperationRange(operations, 'equal', newTokens, match.newStart, match.newStart + match.length);
     }
 
     oldIndex = match.oldStart + match.length;
@@ -641,11 +605,7 @@ function diffTextTokensByMatchingBlocks(
 
 // Recursively find the longest stable token runs, then diff the gaps around them.
 // The prebuilt indexes are shared across ranges so long text does not rebuild maps repeatedly.
-function findTextMatches(
-  oldTokens: string[],
-  newTokens: string[],
-  blockIndexes: TextBlockIndex[]
-): TextMatch[] {
+function findTextMatches(oldTokens: string[], newTokens: string[], blockIndexes: TextBlockIndex[]): TextMatch[] {
   const matches: TextMatch[] = [];
   const stack: Array<{
     oldStart: number;
@@ -659,8 +619,8 @@ function findTextMatches(
       oldEnd: oldTokens.length,
       newStart: 0,
       newEnd: newTokens.length,
-      depth: 0
-    }
+      depth: 0,
+    },
   ];
 
   while (stack.length > 0) {
@@ -681,7 +641,7 @@ function findTextMatches(
       range.oldEnd,
       range.newStart,
       range.newEnd,
-      blockIndexes
+      blockIndexes,
     );
 
     if (!match || match.length === 0) {
@@ -695,14 +655,14 @@ function findTextMatches(
       oldEnd: range.oldEnd,
       newStart: match.newStart + match.length,
       newEnd: range.newEnd,
-      depth: range.depth + 1
+      depth: range.depth + 1,
     });
     stack.push({
       oldStart: range.oldStart,
       oldEnd: match.oldStart,
       newStart: range.newStart,
       newEnd: match.newStart,
-      depth: range.depth + 1
+      depth: range.depth + 1,
     });
   }
 
@@ -717,7 +677,7 @@ function findBestTextMatch(
   oldEnd: number,
   newStart: number,
   newEnd: number,
-  blockIndexes: TextBlockIndex[]
+  blockIndexes: TextBlockIndex[],
 ): TextMatch | null {
   let best: TextMatch | null = null;
   const maxBlockSize = Math.min(MAX_TEXT_MATCH_BLOCK_SIZE, oldEnd - oldStart, newEnd - newStart);
@@ -757,15 +717,14 @@ function findBestTextMatch(
           oldStart,
           oldEnd,
           newStart,
-          newEnd
+          newEnd,
         );
 
         if (
           !best ||
           match.length > best.length ||
           (match.length === best.length &&
-            (match.oldStart < best.oldStart ||
-              (match.oldStart === best.oldStart && match.newStart < best.newStart)))
+            (match.oldStart < best.oldStart || (match.oldStart === best.oldStart && match.newStart < best.newStart)))
         ) {
           best = match;
         }
@@ -848,7 +807,7 @@ function expandTextMatch(
   oldStart: number,
   oldEnd: number,
   newStart: number,
-  newEnd: number
+  newEnd: number,
 ): TextMatch {
   let matchOldStart = oldIndex;
   let matchNewStart = newIndex;
@@ -875,15 +834,11 @@ function expandTextMatch(
   return {
     oldStart: matchOldStart,
     newStart: matchNewStart,
-    length
+    length,
   };
 }
 
-function pushTokenOperation(
-  operations: TokenDiffOperation[],
-  type: TokenDiffOperation['type'],
-  token: string
-): void {
+function pushTokenOperation(operations: TokenDiffOperation[], type: TokenDiffOperation['type'], token: string): void {
   const previous = operations[operations.length - 1];
 
   if (previous && previous.type === type) {
@@ -893,7 +848,7 @@ function pushTokenOperation(
 
   operations.push({
     type,
-    text: token
+    text: token,
   });
 }
 
@@ -902,7 +857,7 @@ function pushTokenOperationRange(
   type: TokenDiffOperation['type'],
   tokens: string[],
   start: number,
-  end: number
+  end: number,
 ): void {
   for (let index = start; index < end; index += 1) {
     pushTokenOperation(operations, type, tokens[index]);
@@ -912,11 +867,11 @@ function pushTokenOperationRange(
 function tokenOperationsToSegments(operations: TokenDiffOperation[]): TextDiffSegment[] {
   const segments: TextDiffSegment[] = [];
 
-  operations.forEach(operation => {
+  operations.forEach((operation) => {
     if (operation.text) {
       segments.push({
         type: operation.type,
-        text: operation.text
+        text: operation.text,
       });
     }
   });
@@ -927,7 +882,7 @@ function tokenOperationsToSegments(operations: TokenDiffOperation[]): TextDiffSe
 function mergeTextSegments(segments: TextDiffSegment[]): TextDiffSegment[] {
   const merged: TextDiffSegment[] = [];
 
-  segments.forEach(segment => {
+  segments.forEach((segment) => {
     if (!segment.text) {
       return;
     }
@@ -941,7 +896,7 @@ function mergeTextSegments(segments: TextDiffSegment[]): TextDiffSegment[] {
 
     merged.push({
       type: segment.type,
-      text: segment.text
+      text: segment.text,
     });
   });
 
@@ -951,7 +906,7 @@ function mergeTextSegments(segments: TextDiffSegment[]): TextDiffSegment[] {
 function createImageWrapper(
   kind: 'added' | 'removed' | 'modified',
   label: string,
-  documentNode: Document
+  documentNode: Document,
 ): HTMLElement {
   const wrapper = documentNode.createElement('span');
   wrapper.className = 'shd-image-wrapper';
@@ -964,7 +919,7 @@ function createStandaloneImageWrapper(
   kind: 'added' | 'removed',
   label: string,
   attrs: Record<string, string>,
-  documentNode: Document
+  documentNode: Document,
 ): HTMLElement {
   const wrapper = createImageWrapper(kind, label, documentNode);
   wrapper.appendChild(createImageNode(attrs, documentNode, label));
@@ -978,7 +933,7 @@ function createImageStage(
   options: {
     imageClassName?: string;
     roleLabel?: string;
-  } = {}
+  } = {},
 ): HTMLElement {
   const stage = documentNode.createElement('span');
   stage.className = 'shd-image-stage';
@@ -996,7 +951,7 @@ function createImageNode(
   attrs: Record<string, string>,
   documentNode: Document,
   title: string,
-  className?: string
+  className?: string,
 ): HTMLImageElement {
   const image = documentNode.createElement('img');
 
@@ -1019,11 +974,7 @@ function applyDiffState(element: HTMLElement, state: 'added' | 'removed'): void 
   element.setAttribute('data-shd-state', state);
 }
 
-function applyMediaDiffState(
-  element: HTMLElement,
-  node: ElementVNode,
-  state: 'added' | 'removed'
-): void {
+function applyMediaDiffState(element: HTMLElement, node: ElementVNode, state: 'added' | 'removed'): void {
   if (!hasDirectImageChild(node)) {
     return;
   }

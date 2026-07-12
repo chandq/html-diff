@@ -111,7 +111,7 @@ function paint(): void {
     container: outputHost,
     oldHtml: oldInput.value,
     newHtml: newInput.value,
-    mode: modeInput.value as RenderMode
+    mode: modeInput.value as RenderMode,
   });
   console.timeEnd('renderHtmlDiff');
 

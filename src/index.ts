@@ -15,5 +15,5 @@ export type {
   RenderResult,
   RootVNode,
   TextVNode,
-  VNode
+  VNode,
 } from './types';

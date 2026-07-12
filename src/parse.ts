@@ -17,7 +17,7 @@ export function parseHtmlToVNode(html: string, options: DiffOptions = {}): RootV
 
   return {
     type: 'root',
-    children
+    children,
   };
 }
 
@@ -31,7 +31,7 @@ function toVNode(node: Node, options: DiffOptions): VNode | null {
 
     const textNode: TextVNode = {
       type: 'text',
-      text
+      text,
     };
 
     return textNode;
@@ -65,7 +65,7 @@ function toVNode(node: Node, options: DiffOptions): VNode | null {
     type: 'element',
     tagName: element.tagName.toLowerCase(),
     attrs,
-    children
+    children,
   };
 
   return elementNode;

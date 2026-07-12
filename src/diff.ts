@@ -24,28 +24,20 @@ export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[
   // Trim only high-confidence equal edges. Similar-but-shifted siblings stay in the
   // middle section so the weighted matcher can align insertions without cascading changes.
 
-  while (
-    start <= oldEnd &&
-    start <= newEnd &&
-    isStrongAlignment(oldChildren[start], newChildren[start], context)
-  ) {
+  while (start <= oldEnd && start <= newEnd && isStrongAlignment(oldChildren[start], newChildren[start], context)) {
     prefix.push({
       status: 'merged',
       oldNode: oldChildren[start],
-      newNode: newChildren[start]
+      newNode: newChildren[start],
     });
     start += 1;
   }
 
-  while (
-    oldEnd >= start &&
-    newEnd >= start &&
-    isStrongAlignment(oldChildren[oldEnd], newChildren[newEnd], context)
-  ) {
+  while (oldEnd >= start && newEnd >= start && isStrongAlignment(oldChildren[oldEnd], newChildren[newEnd], context)) {
     suffix.push({
       status: 'merged',
       oldNode: oldChildren[oldEnd],
-      newNode: newChildren[newEnd]
+      newNode: newChildren[newEnd],
     });
     oldEnd -= 1;
     newEnd -= 1;
@@ -57,7 +49,8 @@ export function diffChildren(oldChildren: VNode[], newChildren: VNode[]): Patch[
     suffix.reverse();
   }
 
-  const patches = new Array<Patch>(prefix.length + middle.length + suffix.length);
+  const patches: Patch[] = [];
+  patches.length = prefix.length + middle.length + suffix.length;
   let patchIndex = 0;
 
   for (let index = 0; index < prefix.length; index += 1) {
@@ -86,7 +79,7 @@ function diffMiddleChildren(
   start: number,
   oldEnd: number,
   newEnd: number,
-  context: AlignmentContext
+  context: AlignmentContext,
 ): Patch[] {
   const oldLength = oldEnd - start + 1;
   const newLength = newEnd - start + 1;
@@ -103,20 +96,12 @@ function diffMiddleChildren(
     return diffMiddleChildrenGreedy(oldChildren, newChildren, start, oldEnd, newEnd, context);
   }
 
-  const matrix = Array.from(
-    { length: oldLength + 1 },
-    () => new Float32Array(newLength + 1)
-  );
+  const matrix = Array.from({ length: oldLength + 1 }, () => new Float32Array(newLength + 1));
 
   for (let oldOffset = oldLength - 1; oldOffset >= 0; oldOffset -= 1) {
     for (let newOffset = newLength - 1; newOffset >= 0; newOffset -= 1) {
-      const score = getAlignmentScore(
-        oldChildren[start + oldOffset],
-        newChildren[start + newOffset],
-        context
-      );
-      const diagonal =
-        score >= MIN_ALIGNMENT_SCORE ? matrix[oldOffset + 1][newOffset + 1] + score : 0;
+      const score = getAlignmentScore(oldChildren[start + oldOffset], newChildren[start + newOffset], context);
+      const diagonal = score >= MIN_ALIGNMENT_SCORE ? matrix[oldOffset + 1][newOffset + 1] + score : 0;
       const removed = matrix[oldOffset + 1][newOffset];
       const added = matrix[oldOffset][newOffset + 1];
 
@@ -132,8 +117,7 @@ function diffMiddleChildren(
     const oldNode = oldChildren[start + oldOffset];
     const newNode = newChildren[start + newOffset];
     const score = getAlignmentScore(oldNode, newNode, context);
-    const diagonalScore =
-      score >= MIN_ALIGNMENT_SCORE ? matrix[oldOffset + 1][newOffset + 1] + score : 0;
+    const diagonalScore = score >= MIN_ALIGNMENT_SCORE ? matrix[oldOffset + 1][newOffset + 1] + score : 0;
 
     if (
       score >= MIN_ALIGNMENT_SCORE &&
@@ -143,7 +127,7 @@ function diffMiddleChildren(
       patches.push({
         status: 'merged',
         oldNode,
-        newNode
+        newNode,
       });
       oldOffset += 1;
       newOffset += 1;
@@ -153,7 +137,7 @@ function diffMiddleChildren(
     if (matrix[oldOffset + 1][newOffset] >= matrix[oldOffset][newOffset + 1]) {
       patches.push({
         status: 'removed',
-        node: oldNode
+        node: oldNode,
       });
       oldOffset += 1;
       continue;
@@ -161,7 +145,7 @@ function diffMiddleChildren(
 
     patches.push({
       status: 'added',
-      node: newNode
+      node: newNode,
     });
     newOffset += 1;
   }
@@ -169,7 +153,7 @@ function diffMiddleChildren(
   while (oldOffset < oldLength) {
     patches.push({
       status: 'removed',
-      node: oldChildren[start + oldOffset]
+      node: oldChildren[start + oldOffset],
     });
     oldOffset += 1;
   }
@@ -177,7 +161,7 @@ function diffMiddleChildren(
   while (newOffset < newLength) {
     patches.push({
       status: 'added',
-      node: newChildren[start + newOffset]
+      node: newChildren[start + newOffset],
     });
     newOffset += 1;
   }
@@ -191,7 +175,7 @@ function diffMiddleChildrenGreedy(
   start: number,
   oldEnd: number,
   newEnd: number,
-  context: AlignmentContext
+  context: AlignmentContext,
 ): Patch[] {
   const patches: Patch[] = [];
   let oldIndex = start;
@@ -201,7 +185,7 @@ function diffMiddleChildrenGreedy(
     if (oldIndex > oldEnd) {
       patches.push({
         status: 'added',
-        node: newChildren[newIndex]
+        node: newChildren[newIndex],
       });
       newIndex += 1;
       continue;
@@ -210,7 +194,7 @@ function diffMiddleChildrenGreedy(
     if (newIndex > newEnd) {
       patches.push({
         status: 'removed',
-        node: oldChildren[oldIndex]
+        node: oldChildren[oldIndex],
       });
       oldIndex += 1;
       continue;
@@ -222,7 +206,7 @@ function diffMiddleChildrenGreedy(
       patches.push({
         status: 'merged',
         oldNode: oldChildren[oldIndex],
-        newNode: newChildren[newIndex]
+        newNode: newChildren[newIndex],
       });
       oldIndex += 1;
       newIndex += 1;
@@ -235,7 +219,7 @@ function diffMiddleChildrenGreedy(
     ) {
       patches.push({
         status: 'added',
-        node: newChildren[newIndex]
+        node: newChildren[newIndex],
       });
       newIndex += 1;
       continue;
@@ -247,7 +231,7 @@ function diffMiddleChildrenGreedy(
     ) {
       patches.push({
         status: 'removed',
-        node: oldChildren[oldIndex]
+        node: oldChildren[oldIndex],
       });
       oldIndex += 1;
       continue;
@@ -255,11 +239,11 @@ function diffMiddleChildrenGreedy(
 
     patches.push({
       status: 'removed',
-      node: oldChildren[oldIndex]
+      node: oldChildren[oldIndex],
     });
     patches.push({
       status: 'added',
-      node: newChildren[newIndex]
+      node: newChildren[newIndex],
     });
     oldIndex += 1;
     newIndex += 1;
@@ -274,7 +258,7 @@ function createAddedPatches(newChildren: VNode[], start: number, end: number): P
   for (let index = start; index <= end; index += 1) {
     patches.push({
       status: 'added',
-      node: newChildren[index]
+      node: newChildren[index],
     });
   }
 
@@ -287,7 +271,7 @@ function createRemovedPatches(oldChildren: VNode[], start: number, end: number):
   for (let index = start; index <= end; index += 1) {
     patches.push({
       status: 'removed',
-      node: oldChildren[index]
+      node: oldChildren[index],
     });
   }
 
@@ -299,23 +283,15 @@ function createRemovedPatches(oldChildren: VNode[], start: number, end: number):
 function createAlignmentContext(): AlignmentContext {
   return {
     textCache: new WeakMap(),
-    scoreCache: new WeakMap()
+    scoreCache: new WeakMap(),
   };
 }
 
-function isStrongAlignment(
-  oldNode: VNode,
-  newNode: VNode,
-  context: AlignmentContext
-): boolean {
+function isStrongAlignment(oldNode: VNode, newNode: VNode, context: AlignmentContext): boolean {
   return getAlignmentScore(oldNode, newNode, context) >= STRONG_ALIGNMENT_SCORE;
 }
 
-function getAlignmentScore(
-  oldNode: VNode,
-  newNode: VNode,
-  context: AlignmentContext
-): number {
+function getAlignmentScore(oldNode: VNode, newNode: VNode, context: AlignmentContext): number {
   const cached = getCachedAlignmentScore(oldNode, newNode, context);
 
   if (cached !== undefined) {
@@ -327,20 +303,11 @@ function getAlignmentScore(
   return score;
 }
 
-function getCachedAlignmentScore(
-  oldNode: VNode,
-  newNode: VNode,
-  context: AlignmentContext
-): number | undefined {
+function getCachedAlignmentScore(oldNode: VNode, newNode: VNode, context: AlignmentContext): number | undefined {
   return context.scoreCache.get(oldNode)?.get(newNode);
 }
 
-function setCachedAlignmentScore(
-  oldNode: VNode,
-  newNode: VNode,
-  score: number,
-  context: AlignmentContext
-): void {
+function setCachedAlignmentScore(oldNode: VNode, newNode: VNode, score: number, context: AlignmentContext): void {
   let byNewNode = context.scoreCache.get(oldNode);
 
   if (!byNewNode) {
@@ -351,11 +318,7 @@ function setCachedAlignmentScore(
   byNewNode.set(newNode, score);
 }
 
-function computeAlignmentScore(
-  oldNode: VNode,
-  newNode: VNode,
-  context: AlignmentContext
-): number {
+function computeAlignmentScore(oldNode: VNode, newNode: VNode, context: AlignmentContext): number {
   if (oldNode.type !== newNode.type) {
     return 0;
   }
@@ -415,7 +378,7 @@ function getNodeText(node: VNode, context: AlignmentContext): string {
   if (node.type === 'text') {
     text = node.text;
   } else {
-    text = node.children.map(child => getNodeText(child, context)).join('');
+    text = node.children.map((child) => getNodeText(child, context)).join('');
   }
 
   context.textCache.set(node, text);
@@ -452,11 +415,11 @@ function getWordSimilarity(left: string, right: string): number {
   const counts = new Map<string, number>();
   let matches = 0;
 
-  leftWords.forEach(word => {
+  leftWords.forEach((word) => {
     counts.set(word, (counts.get(word) ?? 0) + 1);
   });
 
-  rightWords.forEach(word => {
+  rightWords.forEach((word) => {
     const count = counts.get(word) ?? 0;
 
     if (count === 0) {
@@ -487,9 +450,7 @@ function getCharacterSimilarity(left: string, right: string): number {
       }
 
       currentRow[rightIndex] =
-        nextRow[rightIndex] >= currentRow[rightIndex + 1]
-          ? nextRow[rightIndex]
-          : currentRow[rightIndex + 1];
+        nextRow[rightIndex] >= currentRow[rightIndex + 1] ? nextRow[rightIndex] : currentRow[rightIndex + 1];
     }
 
     const previousNextRow = nextRow;

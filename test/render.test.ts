@@ -4,7 +4,7 @@ import {
   createHtmlDiffHtml,
   diffHtml,
   parseHtmlToVNode,
-  renderHtmlDiff
+  renderHtmlDiff,
 } from '../src';
 
 describe('html-diff', () => {
@@ -28,16 +28,14 @@ describe('html-diff', () => {
     host.innerHTML = html;
 
     expect(host.querySelector('[data-shd-state="removed"]')).toBeNull();
-    expect(
-      host.querySelector('[data-shd-marker="text"][data-shd-state="added"]')?.textContent
-    ).toBe('brave ');
+    expect(host.querySelector('[data-shd-marker="text"][data-shd-state="added"]')?.textContent).toBe('brave ');
     expect(host.querySelector('p')?.textContent).toBe('Hello brave world');
   });
 
   it('aligns inserted sibling text blocks without cascading inline replacements', () => {
     const html = createHtmlDiffHtml(
       '<ul><li>Redis cluster</li><li>MySQL primary-replica</li><li>Nginx gateway</li></ul>',
-      '<ul><li>Redis cluster</li><li>ElasticSearch search tier</li><li>MySQL primary-replica on 8.0</li><li>Nginx gateway</li></ul>'
+      '<ul><li>Redis cluster</li><li>ElasticSearch search tier</li><li>MySQL primary-replica on 8.0</li><li>Nginx gateway</li></ul>',
     );
     const host = document.createElement('div');
     host.innerHTML = html;
@@ -48,9 +46,7 @@ describe('html-diff', () => {
     expect(items[1].getAttribute('data-shd-state')).toBe('added');
     expect(items[2].textContent).toBe('MySQL primary-replica on 8.0');
     expect(items[2].querySelector('[data-shd-state="removed"]')).toBeNull();
-    expect(
-      items[2].querySelector('[data-shd-marker="text"][data-shd-state="added"]')?.textContent
-    ).toBe(' on 8.0');
+    expect(items[2].querySelector('[data-shd-marker="text"][data-shd-state="added"]')?.textContent).toBe(' on 8.0');
     expect(items[3].textContent).toBe('Nginx gateway');
     expect(items[3].getAttribute('data-shd-state')).toBeNull();
   });
@@ -67,7 +63,7 @@ describe('html-diff', () => {
       'CSS output 标签内会显示 Svelte 产生的 CSS。',
       '这些标签的上方，你将会找到一个工具栏，让你可以进入全屏幕模式和下载你的应用程序。',
       '假如你有登入 GitHub 账号，你将能够复制（fork）和保存应用程序。',
-      '通过点击你 GitHub 的用户名个人资料并选择你已保存的应用程序（Your saved apps），将能够看到你已保存的所有 REPL。'
+      '通过点击你 GitHub 的用户名个人资料并选择你已保存的应用程序（Your saved apps），将能够看到你已保存的所有 REPL。',
     ].join(' ');
     const newText = oldText
       .replace('Svelte 产生的 CSS。', 'Svelte 产生的 CSSD。')
@@ -77,34 +73,29 @@ describe('html-diff', () => {
     const host = document.createElement('div');
     host.innerHTML = html;
     const removedMarkers = Array.from(
-      host.querySelectorAll<HTMLElement>('[data-shd-marker="text"][data-shd-state="removed"]')
-    ).map(marker => marker.textContent);
+      host.querySelectorAll<HTMLElement>('[data-shd-marker="text"][data-shd-state="removed"]'),
+    ).map((marker) => marker.textContent);
     const addedMarkers = Array.from(
-      host.querySelectorAll<HTMLElement>('[data-shd-marker="text"][data-shd-state="added"]')
-    ).map(marker => marker.textContent);
+      host.querySelectorAll<HTMLElement>('[data-shd-marker="text"][data-shd-state="added"]'),
+    ).map((marker) => marker.textContent);
     const markerTexts = [...removedMarkers, ...addedMarkers].filter(Boolean);
 
     expect(removedMarkers).toContain('CSS');
     expect(addedMarkers).toContain('CSSD');
     expect(addedMarkers).toContain('223');
     expect(addedMarkers).toContain('赛');
-    expect(markerTexts.some(text => text?.includes('这些标签的上方'))).toBe(false);
-    expect(markerTexts.some(text => text?.includes('将会找到一个工具栏'))).toBe(false);
+    expect(markerTexts.some((text) => text?.includes('这些标签的上方'))).toBe(false);
+    expect(markerTexts.some((text) => text?.includes('将会找到一个工具栏'))).toBe(false);
   });
 
   it('keeps source del and ins tags distinct from generated diff markers', () => {
-    const html = createHtmlDiffHtml(
-      '<p><del>legacy</del> summary</p>',
-      '<p><del>legacy</del> summary updated</p>'
-    );
+    const html = createHtmlDiffHtml('<p><del>legacy</del> summary</p>', '<p><del>legacy</del> summary updated</p>');
     const host = document.createElement('div');
     host.innerHTML = html;
 
     expect(host.querySelector('del')?.textContent).toBe('legacy');
     expect(host.querySelector('ins[data-shd-state], del[data-shd-state]')).toBeNull();
-    expect(
-      host.querySelector('[data-shd-marker="text"][data-shd-state="added"]')?.textContent
-    ).toBe(' updated');
+    expect(host.querySelector('[data-shd-marker="text"][data-shd-state="added"]')?.textContent).toBe(' updated');
   });
 
   it('preserves strike-through styles for inline additions', () => {
@@ -114,15 +105,11 @@ describe('html-diff', () => {
     renderHtmlDiff({
       container: host,
       mode: 'scoped',
-      oldHtml:
-        '<p><span style="color: rgb(255, 0, 0); text-decoration: line-through;">alpha</span></p>',
-      newHtml:
-        '<p><span style="color: rgb(255, 0, 0); text-decoration: line-through;">alpha beta</span></p>'
+      oldHtml: '<p><span style="color: rgb(255, 0, 0); text-decoration: line-through;">alpha</span></p>',
+      newHtml: '<p><span style="color: rgb(255, 0, 0); text-decoration: line-through;">alpha beta</span></p>',
     });
 
-    const marker = host.querySelector<HTMLElement>(
-      '[data-shd-marker="text"][data-shd-state="added"]'
-    );
+    const marker = host.querySelector<HTMLElement>('[data-shd-marker="text"][data-shd-state="added"]');
     const styledSpan = host.querySelector<HTMLElement>('span[style]');
 
     expect(marker).toBeTruthy();
@@ -141,12 +128,12 @@ describe('html-diff', () => {
     const styleText = createDiffStyleText({
       added: {
         backgroundColor: '#def7ff',
-        color: '#0550ae'
+        color: '#0550ae',
       },
       removed: {
         backgroundColor: '#fff1f3',
-        color: '#bc1d2e'
-      }
+        color: '#bc1d2e',
+      },
     });
 
     expect(styleText).toContain('--shd-add-bg: #def7ff;');
@@ -167,9 +154,9 @@ describe('html-diff', () => {
       theme: {
         added: {
           backgroundColor: '#dff7ff',
-          color: '#0969da'
-        }
-      }
+          color: '#0969da',
+        },
+      },
     });
 
     const styleText = host.querySelector('[data-html-diff-style]')?.textContent ?? '';
@@ -189,7 +176,7 @@ describe('html-diff', () => {
       container: host,
       mode: 'scoped',
       oldHtml: '<p>alpha</p>',
-      newHtml: '<p>alpha beta</p>'
+      newHtml: '<p>alpha beta</p>',
     });
 
     const content = host.querySelector<HTMLElement>('.shd-content');
@@ -210,12 +197,10 @@ describe('html-diff', () => {
       container: host,
       mode: 'scoped',
       oldHtml: '<p><span style="color: rgb(0, 102, 204);">alpha beta</span></p>',
-      newHtml: '<p><span style="color: rgb(0, 102, 204);">alpha</span></p>'
+      newHtml: '<p><span style="color: rgb(0, 102, 204);">alpha</span></p>',
     });
 
-    const marker = host.querySelector<HTMLElement>(
-      '[data-shd-marker="text"][data-shd-state="removed"]'
-    );
+    const marker = host.querySelector<HTMLElement>('[data-shd-marker="text"][data-shd-state="removed"]');
 
     expect(marker).toBeTruthy();
     expect(DIFF_STYLE_TEXT).toContain('color: var(--shd-remove-text);');
@@ -224,7 +209,7 @@ describe('html-diff', () => {
   it('renders image replacements with the dedicated wrapper', () => {
     const html = createHtmlDiffHtml(
       '<img src="https://example.com/a.png" alt="before" />',
-      '<img src="https://example.com/b.png" alt="after" />'
+      '<img src="https://example.com/b.png" alt="after" />',
     );
 
     expect(html).toContain('shd-image-wrapper');
@@ -234,7 +219,7 @@ describe('html-diff', () => {
   it('preserves image width and height attributes in replacement views', () => {
     const html = createHtmlDiffHtml(
       '<img src="https://example.com/a.png" alt="before" width="640" height="360" style="width: 320px; height: 180px;" />',
-      '<img src="https://example.com/b.png" alt="after" width="480" height="270" />'
+      '<img src="https://example.com/b.png" alt="after" width="480" height="270" />',
     );
     const host = document.createElement('div');
     host.innerHTML = html;
@@ -260,7 +245,7 @@ describe('html-diff', () => {
       container: host,
       mode: 'scoped',
       oldHtml: '<p>before</p>',
-      newHtml: '<p>before</p><img src="https://example.com/a.png" width="320" height="180" />'
+      newHtml: '<p>before</p><img src="https://example.com/a.png" width="320" height="180" />',
     });
 
     const wrapper = host.querySelector<HTMLElement>('.shd-image-wrapper[data-diff-kind="added"]');
@@ -284,28 +269,28 @@ describe('html-diff', () => {
   it('does not add a second image diff wrapper inside added image containers', () => {
     const html = createHtmlDiffHtml(
       '<div></div>',
-      '<div><span class="diff-img-wrapper diff-img-wrap-added"><img src="https://example.com/a.png" width="320" height="180" /></span></div>'
+      '<div><span class="diff-img-wrapper diff-img-wrap-added"><img src="https://example.com/a.png" width="320" height="180" /></span></div>',
     );
     const host = document.createElement('div');
     host.innerHTML = html;
 
     expect(host.querySelectorAll('.shd-image-wrapper')).toHaveLength(0);
-    expect(host.querySelector('.diff-img-wrapper[data-shd-state="added"][data-shd-media-state="added"] img')).toBeTruthy();
+    expect(
+      host.querySelector('.diff-img-wrapper[data-shd-state="added"][data-shd-media-state="added"] img'),
+    ).toBeTruthy();
   });
 
   it('keeps a visible added-image marker when the image lives inside an added container', () => {
     const html = createHtmlDiffHtml(
       '<div></div>',
-      '<div><span class="diff-img-wrapper diff-img-wrap-added"><img src="https://example.com/a.png" width="320" height="180" /></span></div>'
+      '<div><span class="diff-img-wrapper diff-img-wrap-added"><img src="https://example.com/a.png" width="320" height="180" /></span></div>',
     );
     const host = document.createElement('div');
     host.innerHTML = html;
 
     expect(host.querySelectorAll('.shd-image-wrapper')).toHaveLength(0);
     expect(host.querySelector('.diff-img-wrapper[data-shd-media-state="added"] > img')).toBeTruthy();
-    expect(host.querySelector('.diff-img-wrapper')?.getAttribute('data-shd-media-label')).toBe(
-      'Image added'
-    );
+    expect(host.querySelector('.diff-img-wrapper')?.getAttribute('data-shd-media-label')).toBe('Image added');
     expect(DIFF_STYLE_TEXT).toContain('[data-shd-media-state]::before');
     expect(DIFF_STYLE_TEXT).toContain('[data-shd-media-state="added"]');
     expect(DIFF_STYLE_TEXT).not.toContain('[data-shd-state="added"] img');
@@ -314,7 +299,7 @@ describe('html-diff', () => {
   it('adds horizontal scrolling support for preformatted blocks', () => {
     const html = createHtmlDiffHtml(
       '<pre>const value = "alpha";</pre>',
-      '<pre>const value = "alpha beta gamma delta epsilon zeta eta theta";</pre>'
+      '<pre>const value = "alpha beta gamma delta epsilon zeta eta theta";</pre>',
     );
     const host = document.createElement('div');
     host.innerHTML = html;
@@ -339,7 +324,7 @@ describe('html-diff', () => {
     const result = renderHtmlDiff({
       container: host,
       oldHtml: '<p>old</p>',
-      newHtml: '<p>new</p>'
+      newHtml: '<p>new</p>',
     });
 
     expect(result.shadowRoot).toBeTruthy();
@@ -355,7 +340,7 @@ describe('html-diff', () => {
       container: host,
       oldHtml: '<p>old</p>',
       newHtml: '<p>new</p>',
-      mode: 'shadow'
+      mode: 'shadow',
     });
 
     expect(shadowResult.shadowRoot).toBeTruthy();
@@ -365,7 +350,7 @@ describe('html-diff', () => {
       container: host,
       oldHtml: '<p>old</p>',
       newHtml: '<p>new</p>',
-      mode: 'scoped'
+      mode: 'scoped',
     });
 
     expect(host.querySelector('[data-html-diff-style]')).toBeTruthy();
@@ -380,14 +365,14 @@ describe('html-diff', () => {
       container: host,
       oldHtml: '<p>old</p>',
       newHtml: '<p>new</p>',
-      mode: 'shadow'
+      mode: 'shadow',
     });
 
     renderHtmlDiff({
       container: host,
       oldHtml: '<p>old</p>',
       newHtml: '<p>new</p>',
-      mode: 'none'
+      mode: 'none',
     });
 
     expect(host.querySelector('.shd-content')).toBeTruthy();
@@ -398,14 +383,14 @@ describe('html-diff', () => {
     const host = document.createElement('div');
     Object.defineProperty(host, 'attachShadow', {
       value: undefined,
-      configurable: true
+      configurable: true,
     });
 
     renderHtmlDiff({
       container: host,
       oldHtml: '<p>old</p>',
       newHtml: '<p>new</p>',
-      mode: 'shadow'
+      mode: 'shadow',
     });
 
     expect(host.querySelector('[data-html-diff-style]')).toBeTruthy();

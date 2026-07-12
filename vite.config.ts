@@ -1,7 +1,6 @@
 import { resolve } from 'node:path';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, type ViteUserConfig } from 'vitest/config';
 import pkg from './package.json';
-import banner from 'vite-plugin-banner'
 
 const bannerString =
   '/*!\n' +
@@ -14,7 +13,7 @@ const libraryConfig = {
   emptyOutDir: true,
   lib: {
     entry: resolve(__dirname, 'src/index.ts'),
-    name: 'htmlDiff'
+    name: 'htmlDiff',
   },
   outDir: 'dist',
 
@@ -28,7 +27,7 @@ const libraryConfig = {
         chunkFileNames: '[name].mjs',
         preserveModules: true,
         preserveModulesRoot: 'src',
-        banner: bannerString
+        banner: bannerString,
       },
       {
         format: 'cjs',
@@ -38,7 +37,7 @@ const libraryConfig = {
         exports: 'named',
         preserveModules: true,
         preserveModulesRoot: 'src',
-        banner: bannerString
+        banner: bannerString,
       },
       {
         format: 'umd',
@@ -46,35 +45,31 @@ const libraryConfig = {
         entryFileNames: 'index.umd.js',
         name: 'htmlDiff',
         exports: 'named',
-        banner: bannerString
-      }
-    ]
+        banner: bannerString,
+      },
+    ],
   },
-  sourcemap: false
+  sourcemap: false,
 };
 
 const demoConfig = {
   emptyOutDir: true,
   outDir: 'docs',
-  sourcemap: false
+  sourcemap: false,
 };
 
-// @ts-ignore
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode }): ViteUserConfig => {
   const isDemo = mode === 'demo';
 
   return {
     build: isDemo ? demoConfig : libraryConfig,
-    plugins: [banner({
-      outDir: resolve(__dirname, './dist'),
-      content: bannerString,
-    })],
+
     test: {
       environment: 'jsdom',
       globals: true,
       coverage: {
-        reporter: ['lcov', 'text', 'html']
-      }
-    }
+        reporter: ['lcov', 'text', 'html'],
+      },
+    },
   };
 });

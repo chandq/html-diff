@@ -6,28 +6,25 @@ export const STYLE_ATTRIBUTE = 'data-html-diff-style';
 export const DEFAULT_DIFF_THEME = {
   added: {
     backgroundColor: '#e6ffed',
-    color: '#1a7f37'
+    color: '#1a7f37',
   },
   removed: {
     backgroundColor: '#ffeef0',
-    color: '#cf222e'
+    color: '#cf222e',
   },
   modified: {
-    borderColor: 'rgba(217, 119, 6, 0.34)'
-  }
+    borderColor: 'rgba(217, 119, 6, 0.34)',
+  },
 } as const;
 
 export const DIFF_STYLE_TEXT = createDiffStyleText();
 
 export function createDiffStyleText(theme: DiffTheme = {}): string {
-  const addedBackgroundColor =
-    theme.added?.backgroundColor ?? DEFAULT_DIFF_THEME.added.backgroundColor;
+  const addedBackgroundColor = theme.added?.backgroundColor ?? DEFAULT_DIFF_THEME.added.backgroundColor;
   const addedColor = theme.added?.color ?? DEFAULT_DIFF_THEME.added.color;
-  const removedBackgroundColor =
-    theme.removed?.backgroundColor ?? DEFAULT_DIFF_THEME.removed.backgroundColor;
+  const removedBackgroundColor = theme.removed?.backgroundColor ?? DEFAULT_DIFF_THEME.removed.backgroundColor;
   const removedColor = theme.removed?.color ?? DEFAULT_DIFF_THEME.removed.color;
-  const modifiedBorderColor =
-    theme.modified?.borderColor ?? DEFAULT_DIFF_THEME.modified.borderColor;
+  const modifiedBorderColor = theme.modified?.borderColor ?? DEFAULT_DIFF_THEME.modified.borderColor;
   const pagePadding = theme.pagePadding ?? '16px';
 
   return `

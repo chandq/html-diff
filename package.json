@@ -77,9 +77,13 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && npm run build:types",
+    "build": "vite build && npm run build:types && npm run format:dist",
     "build:demo": "vite build --mode demo --base=/html-diff/",
     "build:types": "tsc -p tsconfig.build.json",
+    "format": "oxfmt --write src test vite.config.ts package.json tsconfig.json tsconfig.build.json .oxfmtrc.json",
+    "format:check": "oxfmt --check src test vite.config.ts package.json tsconfig.json tsconfig.build.json .oxfmtrc.json",
+    "format:dist": "oxfmt --write --ignore-path .oxfmtignore dist",
+    "lint": "oxlint src test vite.config.ts --tsconfig tsconfig.json",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run",
     "test": "vitest run --coverage",
@@ -107,10 +111,11 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^25.0.1",
+    "oxfmt": "^0.58.0",
+    "oxlint": "^1.73.0",
     "standard-version": "^9.5.0",
     "typescript": "^5.7.3",
     "vite": "^8.1.4",
-    "vite-plugin-banner": "^0.8.1",
     "vitest": "^4.1.10"
   }
 }
