@@ -1,0 +1,39 @@
+name: Question or help
+description: Ask a usage question or request help with integration.
+title: '[Question]: '
+labels: ['question']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for usage questions, integration questions, and expected behavior clarification.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and where are you stuck?
+      placeholder: I am trying to render a diff in ... but ...
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Relevant code or HTML
+      description: Share the smallest snippet that explains the question.
+      render: ts
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: 0.1.11
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Vue 3, Vite 8, Chrome 131
+    validations:
+      required: false

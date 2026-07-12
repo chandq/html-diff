@@ -1,0 +1,86 @@
+name: Bug report
+description: Report a reproducible problem with html-diff.
+title: '[Bug]: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please provide a minimal reproduction so the issue can be investigated quickly.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened, and what did you expect to happen?
+      placeholder: The diff renders ... but I expected ...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide a small code sample, StackBlitz, repository, or the exact HTML inputs that reproduce the problem.
+      placeholder: |
+        oldHtml:
+        newHtml:
+        options:
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Install @chandq/html-diff ...
+        2. Render with ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: 0.1.11
+    validations:
+      required: true
+  - type: dropdown
+    id: import-path
+    attributes:
+      label: Import path
+      multiple: true
+      options:
+        - '@chandq/html-diff'
+        - '@chandq/html-diff/render'
+        - '@chandq/html-diff/parse'
+        - '@chandq/html-diff/diff'
+        - '@chandq/html-diff/constants'
+        - UMD/browser bundle
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: render-mode
+    attributes:
+      label: Render mode
+      options:
+        - shadow
+        - scoped
+        - none
+        - Not applicable
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include browser/runtime, framework, bundler, and Node.js version if relevant.
+      placeholder: Chrome 131, React 19, Vite 8, Node.js 22
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add screenshots, generated HTML, logs, or any other details that may help.
+    validations:
+      required: false

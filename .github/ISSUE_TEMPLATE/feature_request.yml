@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest an idea or improvement for html-diff.
+title: '[Feature]: '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please describe the user need and the behavior you would like to see.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What limitation, use case, or workflow does this feature address?
+      placeholder: I want to use html-diff for ... but currently ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the API, rendering behavior, option, or output you would like.
+      placeholder: Add an option like ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or alternative designs have you considered?
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Rendering
+        - Text diff
+        - HTML parsing
+        - Node matching
+        - Styling/theme
+        - Package exports
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Include sample HTML, expected output, API sketches, or screenshots if helpful.
+    validations:
+      required: false

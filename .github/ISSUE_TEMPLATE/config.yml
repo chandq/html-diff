@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://chandq.github.io/html-diff/
+    about: Read the html-diff documentation and demo.
+  - name: npm package
+    url: https://www.npmjs.com/package/@chandq/html-diff
+    about: Check the published package, versions, and exports.
